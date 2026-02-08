@@ -2,23 +2,66 @@
 // SUPABASE CONFIGURATION
 // ========================================
 // TODO: Replace with your Supabase credentials
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://ibwhxapresrcmyzumcoh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlid2h4YXByZXNyY215enVtY29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NDEwOTYsImV4cCI6MjA4NjExNzA5Nn0.aWs7bgiXF6ObCG0e9JK07MLDCbIoy9L6XPA0tVQ1G14';
 
-// Initialize Supabase client (you'll need to include Supabase JS library)
-// For now, we'll use localStorage for demo purposes
-// Once you add Supabase, uncomment this:
-// const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Initialize Supabase
+   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ========================================
 // DATA STORAGE (Using localStorage for demo)
 // Replace with Supabase calls
 // ========================================
 class DataStorage {
-    static get(key) {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+    static async get(key) {
+        try {
+            const { data, error } = await supabase.from(key).select('*');
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error getting data:', err);
+            return [];
+        }
     }
+    
+    static async set(key, value) {
+        // For budgets
+        if (key === 'budgets') {
+            const budgetArray = Object.keys(value).map(category => ({
+                category: category,
+                amount: value[category]
+            }));
+            
+            try {
+                const { error } = await supabase.from(key).upsert(budgetArray, { onConflict: 'category' });
+                if (error) throw error;
+            } catch (err) {
+                console.error('Error saving budgets:', err);
+            }
+        }
+    }
+    
+    static async add(key, item) {
+        try {
+            delete item.id; // Let database create ID
+            const { data, error } = await supabase.from(key).insert([item]).select();
+            if (error) throw error;
+            return data[0];
+        } catch (err) {
+            console.error('Error adding data:', err);
+            return null;
+        }
+    }
+    
+    static async delete(key, id) {
+        try {
+            const { error } = await supabase.from(key).delete().eq('id', id);
+            if (error) throw error;
+        } catch (err) {
+            console.error('Error deleting data:', err);
+        }
+    }
+}
     
     static set(key, value) {
         localStorage.setItem(key, JSON.stringify(value));
@@ -45,7 +88,7 @@ class DataStorage {
 let currentTab = 'dashboard';
 let incomes = DataStorage.get('incomes');
 let expenses = DataStorage.get('expenses');
-let budgets = DataStorage.get('budgets') || getDefaultBudgets();
+let budgets = getDefaultBudgets();
 let emis = DataStorage.get('emis');
 
 function getDefaultBudgets() {
@@ -64,13 +107,29 @@ function getDefaultBudgets() {
 // ========================================
 // INITIALIZATION
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
-    initializeTabs();
-    initializeForms();
-    setDefaultDates();
-    loadBudgetValues();
-    updateDashboard();
-});
+document.addEventListener('DOMContentLoaded', async () => {
+       await loadAllData();
+       initializeTabs();
+       initializeForms();
+       setDefaultDates();
+       loadBudgetValues();
+       updateDashboard();
+   });
+   
+   async function loadAllData() {
+       incomes = await DataStorage.get('incomes');
+       expenses = await DataStorage.get('expenses');
+       emis = await DataStorage.get('emis');
+       
+       // Load budgets
+       const budgetData = await DataStorage.get('budgets');
+       if (budgetData && budgetData.length > 0) {
+           budgets = {};
+           budgetData.forEach(item => {
+               budgets[item.category] = item.amount;
+           });
+       }
+   }
 
 function setDefaultDates() {
     const today = new Date().toISOString().split('T')[0];
@@ -157,25 +216,26 @@ function initializeForms() {
     });
 }
 
-function addIncome() {
-    const income = {
-        date: document.getElementById('incomeDate').value,
-        source: document.getElementById('incomeSource').value,
-        description: document.getElementById('incomeDescription').value,
-        amount: parseFloat(document.getElementById('incomeAmount').value)
-    };
-    
-    DataStorage.add('incomes', income);
-    incomes = DataStorage.get('incomes');
-    
-    document.getElementById('incomeForm').reset();
-    setDefaultDates();
-    showSuccess('Income added successfully! 💰');
-    renderIncomeList();
-    updateDashboard();
+async function addIncome() {
+       const income = {
+           date: document.getElementById('incomeDate').value,
+           source: document.getElementById('incomeSource').value,
+           description: document.getElementById('incomeDescription').value,
+           amount: parseFloat(document.getElementById('incomeAmount').value)
+       };
+       
+       await DataStorage.add('incomes', income);
+       incomes = await DataStorage.get('incomes');
+       
+       document.getElementById('incomeForm').reset();
+       setDefaultDates();
+       showSuccess('Income added successfully! 💰');
+       renderIncomeList();
+       updateDashboard();
+   }
 }
 
-function addExpense() {
+async function addExpense() {
     const expense = {
         date: document.getElementById('expenseDate').value,
         category: document.getElementById('expenseCategory').value,
@@ -184,8 +244,8 @@ function addExpense() {
         paymentMethod: document.getElementById('paymentMethod').value
     };
     
-    DataStorage.add('expenses', expense);
-    expenses = DataStorage.get('expenses');
+    await DataStorage.add('expenses', expense);
+    expenses = await DataStorage.get('expenses');
     
     document.getElementById('expenseForm').reset();
     setDefaultDates();
@@ -194,7 +254,7 @@ function addExpense() {
     updateDashboard();
 }
 
-function saveBudget() {
+async function saveBudget() {
     const categories = ['Groceries', 'Transportation', 'DiningOut', 'Utilities', 
                        'Entertainment', 'Healthcare', 'Shopping', 'Other'];
     
@@ -206,12 +266,12 @@ function saveBudget() {
         }
     });
     
-    DataStorage.set('budgets', budgets);
+    await DataStorage.set('budgets', budgets);
     showSuccess('Budget saved successfully! 🎯');
     updateDashboard();
 }
 
-function addEMI() {
+async function addEMI() {
     const emi = {
         name: document.getElementById('emiName').value,
         lender: document.getElementById('emiLender').value,
@@ -219,8 +279,8 @@ function addEMI() {
         amount: parseFloat(document.getElementById('emiAmount').value)
     };
     
-    DataStorage.add('emis', emi);
-    emis = DataStorage.get('emis');
+    await DataStorage.add('emis', emi);
+    emis = await DataStorage.get('emis');
     
     document.getElementById('emiForm').reset();
     showSuccess('EMI added successfully! 💳');
