@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>💰 Personal Finance Dashboard</h1>
+            <p class="subtitle">Track your income, expenses, and budget in real-time</p>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="container">
+        <!-- Summary Cards -->
+        <section class="summary-cards">
+            <div class="card card-income">
+                <div class="card-icon">📈</div>
+                <div class="card-content">
+                    <h3>Total Income</h3>
+                    <p class="card-amount" id="totalIncome">₹0</p>
+                </div>
+            </div>
+            
+            <div class="card card-expense">
+                <div class="card-icon">📉</div>
+                <div class="card-content">
+                    <h3>Total Expenses</h3>
+                    <p class="card-amount" id="totalExpenses">₹0</p>
+                </div>
+            </div>
+            
+            <div class="card card-savings">
+                <div class="card-icon">💎</div>
+                <div class="card-content">
+                    <h3>Net Savings</h3>
+                    <p class="card-amount" id="netSavings">₹0</p>
+                </div>
+            </div>
+            
+            <div class="card card-budget">
+                <div class="card-icon">🎯</div>
+                <div class="card-content">
+                    <h3>Budget Used</h3>
+                    <p class="card-amount" id="budgetUsed">0%</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="income">Add Income</button>
+            <button class="tab-btn" data-tab="expense">Add Expense</button>
+            <button class="tab-btn" data-tab="budget">Budget</button>
+            <button class="tab-btn" data-tab="emi">EMI Tracker</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard-tab">
+            <div class="grid-2">
+                <div class="panel">
+                    <h2>📊 Budget Status</h2>
+                    <div id="budgetStatusList"></div>
+                </div>
+                
+                <div class="panel">
+                    <h2>📅 Weekly Budget</h2>
+                    <div id="weeklyBudgetList"></div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📋 Recent Transactions</h2>
+                <div id="recentTransactions"></div>
+            </div>
+        </div>
+
+        <!-- Income Tab -->
+        <div class="tab-content" id="income-tab">
+            <div class="panel">
+                <h2>➕ Add Income</h2>
+                <form id="incomeForm" class="form">
+                    <div class="form-group">
+                        <label for="incomeDate">Date</label>
+                        <input type="date" id="incomeDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="incomeSource">Source</label>
+                        <select id="incomeSource" required>
+                            <option value="">Select source...</option>
+                            <option value="Salary">Salary</option>
+                            <option value="Freelance">Freelance</option>
+                            <option value="Investment">Investment</option>
+                            <option value="Business">Business</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="incomeDescription">Description</label>
+                        <input type="text" id="incomeDescription" placeholder="e.g., Monthly salary" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="incomeAmount">Amount (₹)</label>
+                        <input type="number" id="incomeAmount" placeholder="0" required min="0" step="0.01">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Income</button>
+                </form>
+            </div>
+            
+            <div class="panel">
+                <h2>📝 Income History</h2>
+                <div id="incomeList"></div>
+            </div>
+        </div>
+
+        <!-- Expense Tab -->
+        <div class="tab-content" id="expense-tab">
+            <div class="panel">
+                <h2>➕ Add Expense</h2>
+                <form id="expenseForm" class="form">
+                    <div class="form-group">
+                        <label for="expenseDate">Date</label>
+                        <input type="date" id="expenseDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expenseCategory">Category</label>
+                        <select id="expenseCategory" required>
+                            <option value="">Select category...</option>
+                            <option value="Groceries">🛒 Groceries</option>
+                            <option value="Transportation">🚗 Transportation</option>
+                            <option value="Dining Out">🍽️ Dining Out</option>
+                            <option value="Utilities">💡 Utilities</option>
+                            <option value="Entertainment">🎬 Entertainment</option>
+                            <option value="Healthcare">🏥 Healthcare</option>
+                            <option value="Shopping">🛍️ Shopping</option>
+                            <option value="Other">📦 Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expenseDescription">Description</label>
+                        <input type="text" id="expenseDescription" placeholder="e.g., Weekly groceries" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expenseAmount">Amount (₹)</label>
+                        <input type="number" id="expenseAmount" placeholder="0" required min="0" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method</label>
+                        <select id="paymentMethod" required>
+                            <option value="">Select method...</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Net Banking">Net Banking</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Expense</button>
+                </form>
+            </div>
+            
+            <div class="panel">
+                <h2>📝 Expense History</h2>
+                <div id="expenseList"></div>
+            </div>
+        </div>
+
+        <!-- Budget Tab -->
+        <div class="tab-content" id="budget-tab">
+            <div class="panel">
+                <h2>🎯 Set Monthly Budget</h2>
+                <p class="help-text">Set your budget for each category. The app will track your spending automatically.</p>
+                <form id="budgetForm" class="form">
+                    <div class="budget-grid">
+                        <div class="form-group">
+                            <label>🛒 Groceries</label>
+                            <input type="number" id="budgetGroceries" placeholder="₹15000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🚗 Transportation</label>
+                            <input type="number" id="budgetTransportation" placeholder="₹5000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🍽️ Dining Out</label>
+                            <input type="number" id="budgetDiningOut" placeholder="₹8000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>💡 Utilities</label>
+                            <input type="number" id="budgetUtilities" placeholder="₹3000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🎬 Entertainment</label>
+                            <input type="number" id="budgetEntertainment" placeholder="₹5000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🏥 Healthcare</label>
+                            <input type="number" id="budgetHealthcare" placeholder="₹3000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🛍️ Shopping</label>
+                            <input type="number" id="budgetShopping" placeholder="₹10000" min="0" step="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>📦 Other</label>
+                            <input type="number" id="budgetOther" placeholder="₹5000" min="0" step="100">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Budget</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- EMI Tab -->
+        <div class="tab-content" id="emi-tab">
+            <div class="panel">
+                <h2>➕ Add EMI</h2>
+                <form id="emiForm" class="form">
+                    <div class="form-group">
+                        <label for="emiName">EMI Name</label>
+                        <input type="text" id="emiName" placeholder="e.g., Home Loan" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emiLender">Lender/Bank</label>
+                        <input type="text" id="emiLender" placeholder="e.g., HDFC Bank" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emiDate">Payment Date (Day of Month)</label>
+                        <input type="number" id="emiDate" min="1" max="31" placeholder="e.g., 5" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emiAmount">Monthly Amount (₹)</label>
+                        <input type="number" id="emiAmount" placeholder="0" required min="0" step="0.01">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add EMI</button>
+                </form>
+            </div>
+            
+            <div class="panel">
+                <h2>📝 EMI List</h2>
+                <div id="emiList"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
