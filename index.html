@@ -4,165 +4,580 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Finance Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a5f4f;
+            --primary-light: #2d7a67;
+            --secondary: #f4a261;
+            --accent: #e76f51;
+            --success: #2d7a67;
+            --warning: #f4a261;
+            --danger: #e76f51;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #2a2a2a;
+            --text-light: #6b6b6b;
+            --border: #e5e5e5;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: var(--bg);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        .tab:hover {
+            background: var(--primary-light);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(26, 95, 79, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .card-header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--card) 0%, #f8f9fa 100%);
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .stat-value.success { color: var(--success); }
+        .stat-value.danger { color: var(--danger); }
+        .stat-value.warning { color: var(--warning); }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 95, 79, 0.1);
+        }
+
+        button {
+            padding: 12px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+
+        button:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 95, 79, 0.3);
+        }
+
+        button.secondary {
+            background: var(--secondary);
+        }
+
+        button.secondary:hover {
+            background: #e89554;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.danger:hover {
+            background: #d55f42;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge.success {
+            background: #d5f4e6;
+            color: var(--success);
+        }
+
+        .badge.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge.danger {
+            background: #f8d7da;
+            color: var(--danger);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            border-left: 4px solid var(--warning);
+            color: #856404;
+        }
+
+        .alert.danger {
+            background: #f8d7da;
+            border-left: 4px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .alert.success {
+            background: #d5f4e6;
+            border-left: 4px solid var(--success);
+            color: var(--success);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--success) 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .ai-suggestion {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .ai-suggestion strong {
+            color: #1976d2;
+        }
+
+        .emi-alert {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border: 2px solid var(--warning);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 162, 97, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(244, 162, 97, 0); }
+        }
+
+        .goal-timeline {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .goal-icon {
+            font-size: 2em;
+        }
+
+        .goal-info {
+            flex: 1;
+        }
+
+        .goal-name {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .goal-stats {
+            font-size: 0.9em;
+            color: var(--text-light);
+        }
+
+        .months-badge {
+            background: var(--primary);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .section-header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+            }
+        }
+
+        .delete-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+
+        .delete-btn:hover {
+            background: #d55f42;
+        }
+    </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
+    <header>
         <div class="container">
             <h1>💰 Personal Finance Dashboard</h1>
-            <p class="subtitle">Track your income, expenses, and budget in real-time</p>
+            <p class="subtitle">Track your money, achieve your goals, build wealth</p>
         </div>
     </header>
 
-    <!-- Main Dashboard -->
-    <main class="container">
-        <!-- Summary Cards -->
-        <section class="summary-cards">
-            <div class="card card-income">
-                <div class="card-icon">📈</div>
-                <div class="card-content">
-                    <h3>Total Income</h3>
-                    <p class="card-amount" id="totalIncome">₹0</p>
-                </div>
-            </div>
-            
-            <div class="card card-expense">
-                <div class="card-icon">📉</div>
-                <div class="card-content">
-                    <h3>Total Expenses</h3>
-                    <p class="card-amount" id="totalExpenses">₹0</p>
-                </div>
-            </div>
-            
-            <div class="card card-savings">
-                <div class="card-icon">💎</div>
-                <div class="card-content">
-                    <h3>Net Savings</h3>
-                    <p class="card-amount" id="netSavings">₹0</p>
-                </div>
-            </div>
-            
-            <div class="card card-budget">
-                <div class="card-icon">🎯</div>
-                <div class="card-content">
-                    <h3>Budget Used</h3>
-                    <p class="card-amount" id="budgetUsed">0%</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Tabs -->
+    <div class="container">
         <div class="tabs">
-            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-            <button class="tab-btn" data-tab="income">Add Income</button>
-            <button class="tab-btn" data-tab="expense">Add Expense</button>
-            <button class="tab-btn" data-tab="budget">Budget</button>
-            <button class="tab-btn" data-tab="emi">EMI Tracker</button>
+            <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="showTab('income')">💵 Income</button>
+            <button class="tab" onclick="showTab('expenses')">💳 Expenses</button>
+            <button class="tab" onclick="showTab('budget')">📈 Budget</button>
+            <button class="tab" onclick="showTab('emi')">📅 EMI Tracker</button>
+            <button class="tab" onclick="showTab('goals')">🎯 Savings Goals</button>
+            <button class="tab" onclick="showTab('ai')">🤖 AI Advisor</button>
         </div>
 
-        <!-- Dashboard Tab -->
-        <div class="tab-content active" id="dashboard-tab">
-            <div class="grid-2">
-                <div class="panel">
-                    <h2>📊 Budget Status</h2>
-                    <div id="budgetStatusList"></div>
+        <!-- DASHBOARD TAB -->
+        <div id="dashboard" class="tab-content active">
+            <div class="grid">
+                <div class="card stat-card">
+                    <div class="stat-label">Total Income</div>
+                    <div class="stat-value success" id="totalIncome">₹0</div>
                 </div>
-                
-                <div class="panel">
-                    <h2>📅 Weekly Budget</h2>
-                    <div id="weeklyBudgetList"></div>
+                <div class="card stat-card">
+                    <div class="stat-label">Total Expenses</div>
+                    <div class="stat-value danger" id="totalExpenses">₹0</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">Total EMI Payments</div>
+                    <div class="stat-value warning" id="totalEMI">₹0</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">Net Savings</div>
+                    <div class="stat-value" id="netSavings">₹0</div>
                 </div>
             </div>
-            
-            <div class="panel">
-                <h2>📋 Recent Transactions</h2>
-                <div id="recentTransactions"></div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">💼 Budget Status</div>
+                    <div class="stat-label">Total Monthly Budget</div>
+                    <div class="stat-value" id="totalBudget">₹0</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="budgetProgress" style="width: 0%">0%</div>
+                    </div>
+                    <p style="margin-top: 10px; color: var(--text-light);">
+                        <span id="budgetRemaining">₹0</span> remaining
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">📊 Savings Rate</div>
+                    <div class="stat-value" id="savingsRate">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="savingsProgress" style="width: 0%">0%</div>
+                    </div>
+                    <p style="margin-top: 10px; color: var(--text-light);" id="healthStatus">Building wealth...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">🔔 EMI Alerts - Due in Next 5 Days</div>
+                <div id="emiAlerts"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">💎 Savings Goals Timeline</div>
+                <div id="goalsSummary"></div>
             </div>
         </div>
 
-        <!-- Income Tab -->
-        <div class="tab-content" id="income-tab">
-            <div class="panel">
-                <h2>➕ Add Income</h2>
-                <form id="incomeForm" class="form">
+        <!-- INCOME TAB -->
+        <div id="income" class="tab-content">
+            <div class="card">
+                <div class="card-header">💵 Add Income</div>
+                <form id="incomeForm">
                     <div class="form-group">
-                        <label for="incomeDate">Date</label>
+                        <label>Date</label>
                         <input type="date" id="incomeDate" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="incomeSource">Source</label>
-                        <select id="incomeSource" required>
-                            <option value="">Select source...</option>
-                            <option value="Salary">Salary</option>
-                            <option value="Freelance">Freelance</option>
-                            <option value="Investment">Investment</option>
-                            <option value="Business">Business</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <label>Source (e.g., Salary, Freelance)</label>
+                        <input type="text" id="incomeSource" placeholder="Enter income source" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="incomeDescription">Description</label>
-                        <input type="text" id="incomeDescription" placeholder="e.g., Monthly salary" required>
+                        <label>Description</label>
+                        <input type="text" id="incomeDescription" placeholder="Enter description">
                     </div>
-                    
                     <div class="form-group">
-                        <label for="incomeAmount">Amount (₹)</label>
-                        <input type="number" id="incomeAmount" placeholder="0" required min="0" step="0.01">
+                        <label>Amount (₹)</label>
+                        <input type="number" id="incomeAmount" placeholder="Enter amount" required min="0">
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary">Add Income</button>
+                    <button type="submit">Add Income</button>
                 </form>
             </div>
-            
-            <div class="panel">
-                <h2>📝 Income History</h2>
+
+            <div class="card">
+                <div class="card-header">📋 Income History</div>
                 <div id="incomeList"></div>
             </div>
         </div>
 
-        <!-- Expense Tab -->
-        <div class="tab-content" id="expense-tab">
-            <div class="panel">
-                <h2>➕ Add Expense</h2>
-                <form id="expenseForm" class="form">
+        <!-- EXPENSES TAB -->
+        <div id="expenses" class="tab-content">
+            <div class="card">
+                <div class="card-header">💳 Add Expense</div>
+                <form id="expenseForm">
                     <div class="form-group">
-                        <label for="expenseDate">Date</label>
+                        <label>Date</label>
                         <input type="date" id="expenseDate" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="expenseCategory">Category</label>
+                        <label>Category</label>
                         <select id="expenseCategory" required>
-                            <option value="">Select category...</option>
-                            <option value="Groceries">🛒 Groceries</option>
-                            <option value="Transportation">🚗 Transportation</option>
-                            <option value="Dining Out">🍽️ Dining Out</option>
-                            <option value="Utilities">💡 Utilities</option>
-                            <option value="Entertainment">🎬 Entertainment</option>
-                            <option value="Healthcare">🏥 Healthcare</option>
-                            <option value="Shopping">🛍️ Shopping</option>
-                            <option value="Other">📦 Other</option>
+                            <option value="">Select Category</option>
+                            <option value="Groceries">Groceries</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Dining Out">Dining Out</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="expenseDescription">Description</label>
-                        <input type="text" id="expenseDescription" placeholder="e.g., Weekly groceries" required>
+                        <label>Description</label>
+                        <input type="text" id="expenseDescription" placeholder="Enter description" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="expenseAmount">Amount (₹)</label>
-                        <input type="number" id="expenseAmount" placeholder="0" required min="0" step="0.01">
+                        <label>Amount (₹)</label>
+                        <input type="number" id="expenseAmount" placeholder="Enter amount" required min="0">
                     </div>
-                    
                     <div class="form-group">
-                        <label for="paymentMethod">Payment Method</label>
-                        <select id="paymentMethod" required>
-                            <option value="">Select method...</option>
+                        <label>Payment Method</label>
+                        <select id="expensePayment" required>
                             <option value="Cash">Cash</option>
                             <option value="Credit Card">Credit Card</option>
                             <option value="Debit Card">Debit Card</option>
@@ -170,106 +585,742 @@
                             <option value="Net Banking">Net Banking</option>
                         </select>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary">Add Expense</button>
+                    <button type="submit">Add Expense</button>
                 </form>
             </div>
-            
-            <div class="panel">
-                <h2>📝 Expense History</h2>
+
+            <div class="card">
+                <div class="card-header">📋 Expense History</div>
                 <div id="expenseList"></div>
             </div>
         </div>
 
-        <!-- Budget Tab -->
-        <div class="tab-content" id="budget-tab">
-            <div class="panel">
-                <h2>🎯 Set Monthly Budget</h2>
-                <p class="help-text">Set your budget for each category. The app will track your spending automatically.</p>
-                <form id="budgetForm" class="form">
-                    <div class="budget-grid">
-                        <div class="form-group">
-                            <label>🛒 Groceries</label>
-                            <input type="number" id="budgetGroceries" placeholder="₹15000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>🚗 Transportation</label>
-                            <input type="number" id="budgetTransportation" placeholder="₹5000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>🍽️ Dining Out</label>
-                            <input type="number" id="budgetDiningOut" placeholder="₹8000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>💡 Utilities</label>
-                            <input type="number" id="budgetUtilities" placeholder="₹3000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>🎬 Entertainment</label>
-                            <input type="number" id="budgetEntertainment" placeholder="₹5000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>🏥 Healthcare</label>
-                            <input type="number" id="budgetHealthcare" placeholder="₹3000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>🛍️ Shopping</label>
-                            <input type="number" id="budgetShopping" placeholder="₹10000" min="0" step="100">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>📦 Other</label>
-                            <input type="number" id="budgetOther" placeholder="₹5000" min="0" step="100">
-                        </div>
+        <!-- BUDGET TAB -->
+        <div id="budget" class="tab-content">
+            <div class="card">
+                <div class="card-header">📈 Set Monthly Budget</div>
+                <form id="budgetForm">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="budgetCategory" required>
+                            <option value="Groceries">Groceries</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Dining Out">Dining Out</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary">Save Budget</button>
+                    <div class="form-group">
+                        <label>Monthly Budget Amount (₹)</label>
+                        <input type="number" id="budgetAmount" placeholder="Enter budget amount" required min="0">
+                    </div>
+                    <button type="submit">Set Budget</button>
                 </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📊 Budget vs Actual Spending</div>
+                <div id="budgetComparison"></div>
             </div>
         </div>
 
-        <!-- EMI Tab -->
-        <div class="tab-content" id="emi-tab">
-            <div class="panel">
-                <h2>➕ Add EMI</h2>
-                <form id="emiForm" class="form">
+        <!-- EMI TAB -->
+        <div id="emi" class="tab-content">
+            <div class="alert warning">
+                <span>⚠️</span>
+                <span>Email alerts will be shown here 5 days before EMI due date. Set your email below.</span>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📅 Add EMI</div>
+                <form id="emiForm">
                     <div class="form-group">
-                        <label for="emiName">EMI Name</label>
-                        <input type="text" id="emiName" placeholder="e.g., Home Loan" required>
+                        <label>EMI Name (e.g., Home Loan, Car Loan)</label>
+                        <input type="text" id="emiName" placeholder="Enter EMI name" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="emiLender">Lender/Bank</label>
-                        <input type="text" id="emiLender" placeholder="e.g., HDFC Bank" required>
+                        <label>Payment Date (Day of Month)</label>
+                        <input type="date" id="emiDate" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="emiDate">Payment Date (Day of Month)</label>
-                        <input type="number" id="emiDate" min="1" max="31" placeholder="e.g., 5" required>
+                        <label>Principal Amount (₹)</label>
+                        <input type="number" id="emiPrincipal" placeholder="Enter principal amount" required min="0">
                     </div>
-                    
                     <div class="form-group">
-                        <label for="emiAmount">Monthly Amount (₹)</label>
-                        <input type="number" id="emiAmount" placeholder="0" required min="0" step="0.01">
+                        <label>Monthly EMI Amount (₹)</label>
+                        <input type="number" id="emiAmount" placeholder="Enter monthly EMI" required min="0">
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary">Add EMI</button>
+                    <button type="submit">Add EMI</button>
                 </form>
             </div>
-            
-            <div class="panel">
-                <h2>📝 EMI List</h2>
+
+            <div class="card">
+                <div class="card-header">📧 Email Alert Settings</div>
+                <div class="form-group">
+                    <label>Your Email for Alerts</label>
+                    <input type="email" id="alertEmail" placeholder="youremail@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label>Alert Days Before EMI</label>
+                    <input type="number" id="alertDays" value="5" min="1" max="30">
+                </div>
+                <button onclick="saveEmailSettings()">Save Settings</button>
+                <p style="margin-top: 15px; color: var(--text-light); font-size: 0.9em;">
+                    Note: Browser notifications will appear. For actual email alerts, integrate with email service.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📋 EMI List</div>
                 <div id="emiList"></div>
             </div>
         </div>
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   <script src="app.js"></script>
+
+        <!-- SAVINGS GOALS TAB -->
+        <div id="goals" class="tab-content">
+            <div class="card">
+                <div class="card-header">🎯 Add Savings Goal</div>
+                <form id="goalForm">
+                    <div class="form-group">
+                        <label>Goal Name (e.g., Emergency Fund, New Car)</label>
+                        <input type="text" id="goalName" placeholder="Enter goal name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Amount (₹)</label>
+                        <input type="number" id="goalTarget" placeholder="Enter target amount" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Current Saved (₹)</label>
+                        <input type="number" id="goalCurrent" placeholder="Amount already saved" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Saving Amount (₹)</label>
+                        <input type="number" id="goalMonthly" placeholder="How much you'll save per month" required min="0">
+                    </div>
+                    <button type="submit">Add Goal</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">💎 Your Savings Goals & Timeline</div>
+                <div id="goalsList"></div>
+            </div>
+        </div>
+
+        <!-- AI ADVISOR TAB -->
+        <div id="ai" class="tab-content">
+            <div class="card">
+                <div class="card-header">🤖 Your Financial Health Score</div>
+                <div class="grid">
+                    <div>
+                        <div class="stat-label">Savings Rate</div>
+                        <div class="stat-value success" id="aiSavingsRate">0%</div>
+                    </div>
+                    <div>
+                        <div class="stat-label">Health Status</div>
+                        <div class="stat-value" id="aiHealthStatus" style="font-size: 1.5em;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">💡 Budget Optimization Suggestions</div>
+                <div id="aiSuggestions"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">💰 Investment Opportunities</div>
+                <div id="investmentSuggestions"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📈 Wealth Building Tips</div>
+                <div class="ai-suggestion">
+                    <strong>1. Follow 50-30-20 Rule:</strong> 50% Needs, 30% Wants, 20% Savings
+                </div>
+                <div class="ai-suggestion">
+                    <strong>2. Emergency Fund:</strong> Build 6 months of expenses for financial security
+                </div>
+                <div class="ai-suggestion">
+                    <strong>3. Start Investing Early:</strong> Even ₹500/month SIP can grow significantly over time
+                </div>
+                <div class="ai-suggestion">
+                    <strong>4. Pay High-Interest Debt First:</strong> Reduce financial burden by clearing expensive loans
+                </div>
+                <div class="ai-suggestion">
+                    <strong>5. Review Monthly:</strong> Track spending patterns and adjust budgets regularly
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        let incomeData = [];
+        let expenseData = [];
+        let budgetData = {
+            'Groceries': 15000,
+            'Transportation': 5000,
+            'Dining Out': 8000,
+            'Utilities': 3000,
+            'Entertainment': 5000,
+            'Healthcare': 3000,
+            'Shopping': 10000,
+            'Other': 5000
+        };
+        let emiData = [];
+        let goalsData = [];
+
+        // Load data from storage
+        async function loadData() {
+            try {
+                const keys = await window.storage.list('finance:');
+                if (keys && keys.keys.length > 0) {
+                    for (const key of keys.keys) {
+                        const result = await window.storage.get(key);
+                        if (result && result.value) {
+                            const data = JSON.parse(result.value);
+                            if (key === 'finance:income') incomeData = data;
+                            if (key === 'finance:expenses') expenseData = data;
+                            if (key === 'finance:budget') budgetData = data;
+                            if (key === 'finance:emi') emiData = data;
+                            if (key === 'finance:goals') goalsData = data;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('No saved data found, using defaults');
+            }
+            updateDashboard();
+        }
+
+        // Save data to storage
+        async function saveData() {
+            try {
+                await window.storage.set('finance:income', JSON.stringify(incomeData));
+                await window.storage.set('finance:expenses', JSON.stringify(expenseData));
+                await window.storage.set('finance:budget', JSON.stringify(budgetData));
+                await window.storage.set('finance:emi', JSON.stringify(emiData));
+                await window.storage.set('finance:goals', JSON.stringify(goalsData));
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'income') renderIncomeList();
+            if (tabName === 'expenses') renderExpenseList();
+            if (tabName === 'budget') renderBudgetComparison();
+            if (tabName === 'emi') renderEMIList();
+            if (tabName === 'goals') renderGoalsList();
+            if (tabName === 'ai') updateAIAdvisor();
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return '₹' + amount.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        }
+
+        // Calculate totals
+        function calculateTotals() {
+            const totalIncome = incomeData.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+            const totalExpenses = expenseData.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+            const totalEMI = emiData.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+            const netSavings = totalIncome - totalExpenses - totalEMI;
+            const savingsRate = totalIncome > 0 ? (netSavings / totalIncome * 100).toFixed(1) : 0;
+            const totalBudget = Object.values(budgetData).reduce((sum, val) => sum + val, 0);
+            
+            return { totalIncome, totalExpenses, totalEMI, netSavings, savingsRate, totalBudget };
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            const totals = calculateTotals();
+            
+            document.getElementById('totalIncome').textContent = formatCurrency(totals.totalIncome);
+            document.getElementById('totalExpenses').textContent = formatCurrency(totals.totalExpenses);
+            document.getElementById('totalEMI').textContent = formatCurrency(totals.totalEMI);
+            document.getElementById('netSavings').textContent = formatCurrency(totals.netSavings);
+            document.getElementById('netSavings').className = 'stat-value ' + (totals.netSavings >= 0 ? 'success' : 'danger');
+            
+            document.getElementById('totalBudget').textContent = formatCurrency(totals.totalBudget);
+            const budgetUsed = (totals.totalExpenses / totals.totalBudget * 100).toFixed(1);
+            document.getElementById('budgetProgress').style.width = Math.min(budgetUsed, 100) + '%';
+            document.getElementById('budgetProgress').textContent = budgetUsed + '%';
+            document.getElementById('budgetRemaining').textContent = formatCurrency(totals.totalBudget - totals.totalExpenses);
+            
+            document.getElementById('savingsRate').textContent = totals.savingsRate + '%';
+            document.getElementById('savingsProgress').style.width = Math.min(totals.savingsRate, 100) + '%';
+            document.getElementById('savingsProgress').textContent = totals.savingsRate + '%';
+            
+            let healthStatus = '';
+            if (totals.savingsRate >= 30) healthStatus = '💚 Excellent';
+            else if (totals.savingsRate >= 20) healthStatus = '💛 Good';
+            else if (totals.savingsRate >= 10) healthStatus = '🧡 Fair';
+            else healthStatus = '❤️ Needs Improvement';
+            document.getElementById('healthStatus').textContent = healthStatus;
+            
+            renderEMIAlerts();
+            renderGoalsSummary();
+        }
+
+        // Render EMI Alerts
+        function renderEMIAlerts() {
+            const alertsDiv = document.getElementById('emiAlerts');
+            const today = new Date();
+            const alerts = emiData.filter(emi => {
+                const emiDate = new Date(emi.date);
+                const daysUntil = Math.ceil((emiDate - today) / (1000 * 60 * 60 * 24));
+                return daysUntil <= 5 && daysUntil >= 0;
+            });
+
+            if (alerts.length === 0) {
+                alertsDiv.innerHTML = '<p style="color: var(--text-light);">No upcoming EMI payments in the next 5 days ✅</p>';
+                return;
+            }
+
+            let html = '';
+            alerts.forEach(emi => {
+                const emiDate = new Date(emi.date);
+                const daysUntil = Math.ceil((emiDate - today) / (1000 * 60 * 60 * 24));
+                html += `
+                    <div class="emi-alert">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="font-size: 1.2em;">${emi.name}</strong>
+                                <p>Payment Date: ${emi.date} | Amount: ${formatCurrency(emi.amount)}</p>
+                                <p style="color: var(--danger); font-weight: 600;">⚠️ Due in ${daysUntil} day(s)!</p>
+                            </div>
+                            <div class="badge danger">PAY SOON</div>
+                        </div>
+                    </div>
+                `;
+            });
+            alertsDiv.innerHTML = html;
+        }
+
+        // Render Goals Summary
+        function renderGoalsSummary() {
+            const summaryDiv = document.getElementById('goalsSummary');
+            if (goalsData.length === 0) {
+                summaryDiv.innerHTML = '<p style="color: var(--text-light);">No savings goals set yet. Go to Savings Goals tab to add!</p>';
+                return;
+            }
+
+            let html = '';
+            goalsData.slice(0, 5).forEach(goal => {
+                const remaining = goal.target - goal.current;
+                const months = goal.monthly > 0 ? Math.ceil(remaining / goal.monthly) : '∞';
+                const progress = (goal.current / goal.target * 100).toFixed(1);
+                
+                html += `
+                    <div class="goal-timeline">
+                        <div class="goal-icon">🎯</div>
+                        <div class="goal-info">
+                            <div class="goal-name">${goal.name}</div>
+                            <div class="goal-stats">
+                                ${formatCurrency(goal.current)} / ${formatCurrency(goal.target)} 
+                                (${progress}% complete)
+                            </div>
+                            <div class="progress-bar" style="margin-top: 8px;">
+                                <div class="progress-fill" style="width: ${Math.min(progress, 100)}%">${progress}%</div>
+                            </div>
+                        </div>
+                        <div class="months-badge">${months} months</div>
+                    </div>
+                `;
+            });
+            summaryDiv.innerHTML = html;
+        }
+
+        // Income Form
+        document.getElementById('incomeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const income = {
+                date: document.getElementById('incomeDate').value,
+                source: document.getElementById('incomeSource').value,
+                description: document.getElementById('incomeDescription').value,
+                amount: parseFloat(document.getElementById('incomeAmount').value)
+            };
+            incomeData.push(income);
+            await saveData();
+            e.target.reset();
+            renderIncomeList();
+            updateDashboard();
+            alert('Income added successfully! ✅');
+        });
+
+        // Render Income List
+        function renderIncomeList() {
+            const listDiv = document.getElementById('incomeList');
+            if (incomeData.length === 0) {
+                listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💵</div><p>No income entries yet</p></div>';
+                return;
+            }
+
+            let html = '<table><tr><th>Date</th><th>Source</th><th>Description</th><th>Amount</th><th>Action</th></tr>';
+            incomeData.forEach((income, index) => {
+                html += `
+                    <tr>
+                        <td>${income.date}</td>
+                        <td><strong>${income.source}</strong></td>
+                        <td>${income.description}</td>
+                        <td style="color: var(--success); font-weight: 700;">${formatCurrency(income.amount)}</td>
+                        <td><button class="delete-btn" onclick="deleteIncome(${index})">Delete</button></td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            listDiv.innerHTML = html;
+        }
+
+        // Delete Income
+        async function deleteIncome(index) {
+            if (confirm('Delete this income entry?')) {
+                incomeData.splice(index, 1);
+                await saveData();
+                renderIncomeList();
+                updateDashboard();
+            }
+        }
+
+        // Expense Form
+        document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const expense = {
+                date: document.getElementById('expenseDate').value,
+                category: document.getElementById('expenseCategory').value,
+                description: document.getElementById('expenseDescription').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                payment: document.getElementById('expensePayment').value
+            };
+            expenseData.push(expense);
+            await saveData();
+            e.target.reset();
+            renderExpenseList();
+            updateDashboard();
+            alert('Expense added successfully! ✅');
+        });
+
+        // Render Expense List
+        function renderExpenseList() {
+            const listDiv = document.getElementById('expenseList');
+            if (expenseData.length === 0) {
+                listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💳</div><p>No expenses yet</p></div>';
+                return;
+            }
+
+            let html = '<table><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Payment</th><th>Action</th></tr>';
+            expenseData.forEach((expense, index) => {
+                html += `
+                    <tr>
+                        <td>${expense.date}</td>
+                        <td><span class="badge success">${expense.category}</span></td>
+                        <td>${expense.description}</td>
+                        <td style="color: var(--danger); font-weight: 700;">${formatCurrency(expense.amount)}</td>
+                        <td>${expense.payment}</td>
+                        <td><button class="delete-btn" onclick="deleteExpense(${index})">Delete</button></td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            listDiv.innerHTML = html;
+        }
+
+        // Delete Expense
+        async function deleteExpense(index) {
+            if (confirm('Delete this expense?')) {
+                expenseData.splice(index, 1);
+                await saveData();
+                renderExpenseList();
+                updateDashboard();
+            }
+        }
+
+        // Budget Form
+        document.getElementById('budgetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const category = document.getElementById('budgetCategory').value;
+            const amount = parseFloat(document.getElementById('budgetAmount').value);
+            budgetData[category] = amount;
+            await saveData();
+            e.target.reset();
+            renderBudgetComparison();
+            updateDashboard();
+            alert('Budget updated successfully! ✅');
+        });
+
+        // Render Budget Comparison
+        function renderBudgetComparison() {
+            const compDiv = document.getElementById('budgetComparison');
+            let html = '<table><tr><th>Category</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>Status</th></tr>';
+            
+            Object.keys(budgetData).forEach(category => {
+                const budget = budgetData[category];
+                const spent = expenseData
+                    .filter(e => e.category === category)
+                    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+                const remaining = budget - spent;
+                const percentage = (spent / budget * 100).toFixed(1);
+                
+                let status = '';
+                if (spent > budget * 1.2) status = '<span class="badge danger">⚠️ Over Budget</span>';
+                else if (spent > budget * 0.8) status = '<span class="badge warning">⚡ Close</span>';
+                else status = '<span class="badge success">✅ Good</span>';
+                
+                html += `
+                    <tr>
+                        <td><strong>${category}</strong></td>
+                        <td>${formatCurrency(budget)}</td>
+                        <td style="color: var(--danger); font-weight: 600;">${formatCurrency(spent)}</td>
+                        <td style="color: ${remaining >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 600;">
+                            ${formatCurrency(remaining)}
+                        </td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            compDiv.innerHTML = html;
+        }
+
+        // EMI Form
+        document.getElementById('emiForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emi = {
+                name: document.getElementById('emiName').value,
+                date: document.getElementById('emiDate').value,
+                principal: parseFloat(document.getElementById('emiPrincipal').value),
+                amount: parseFloat(document.getElementById('emiAmount').value)
+            };
+            emiData.push(emi);
+            await saveData();
+            e.target.reset();
+            renderEMIList();
+            updateDashboard();
+            alert('EMI added successfully! ✅');
+        });
+
+        // Render EMI List
+        function renderEMIList() {
+            const listDiv = document.getElementById('emiList');
+            if (emiData.length === 0) {
+                listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>No EMIs added yet</p></div>';
+                return;
+            }
+
+            let html = '<table><tr><th>EMI Name</th><th>Payment Date</th><th>Principal</th><th>Monthly EMI</th><th>Days Left</th><th>Action</th></tr>';
+            const today = new Date();
+            
+            emiData.forEach((emi, index) => {
+                const emiDate = new Date(emi.date);
+                const daysUntil = Math.ceil((emiDate - today) / (1000 * 60 * 60 * 24));
+                let status = '';
+                if (daysUntil <= 0) status = '<span class="badge danger">OVERDUE</span>';
+                else if (daysUntil <= 5) status = '<span class="badge warning">DUE SOON</span>';
+                else status = `${daysUntil} days`;
+                
+                html += `
+                    <tr>
+                        <td><strong>${emi.name}</strong></td>
+                        <td>${emi.date}</td>
+                        <td>${formatCurrency(emi.principal)}</td>
+                        <td style="color: var(--danger); font-weight: 700;">${formatCurrency(emi.amount)}</td>
+                        <td>${status}</td>
+                        <td><button class="delete-btn" onclick="deleteEMI(${index})">Delete</button></td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            listDiv.innerHTML = html;
+        }
+
+        // Delete EMI
+        async function deleteEMI(index) {
+            if (confirm('Delete this EMI?')) {
+                emiData.splice(index, 1);
+                await saveData();
+                renderEMIList();
+                updateDashboard();
+            }
+        }
+
+        // Save Email Settings
+        async function saveEmailSettings() {
+            const email = document.getElementById('alertEmail').value;
+            const days = document.getElementById('alertDays').value;
+            await window.storage.set('finance:email-settings', JSON.stringify({ email, days }));
+            alert('Email settings saved! ✅');
+        }
+
+        // Goal Form
+        document.getElementById('goalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const goal = {
+                name: document.getElementById('goalName').value,
+                target: parseFloat(document.getElementById('goalTarget').value),
+                current: parseFloat(document.getElementById('goalCurrent').value),
+                monthly: parseFloat(document.getElementById('goalMonthly').value)
+            };
+            goalsData.push(goal);
+            await saveData();
+            e.target.reset();
+            renderGoalsList();
+            updateDashboard();
+            alert('Savings goal added successfully! ✅');
+        });
+
+        // Render Goals List
+        function renderGoalsList() {
+            const listDiv = document.getElementById('goalsList');
+            if (goalsData.length === 0) {
+                listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎯</div><p>No savings goals yet</p></div>';
+                return;
+            }
+
+            let html = '';
+            goalsData.forEach((goal, index) => {
+                const remaining = goal.target - goal.current;
+                const months = goal.monthly > 0 ? Math.ceil(remaining / goal.monthly) : '∞';
+                const progress = (goal.current / goal.target * 100).toFixed(1);
+                
+                html += `
+                    <div class="goal-timeline">
+                        <div class="goal-icon">🎯</div>
+                        <div class="goal-info">
+                            <div class="goal-name">${goal.name}</div>
+                            <div class="goal-stats">
+                                Target: ${formatCurrency(goal.target)} | 
+                                Saved: ${formatCurrency(goal.current)} | 
+                                Remaining: ${formatCurrency(remaining)}
+                            </div>
+                            <div class="goal-stats">
+                                Monthly Saving: ${formatCurrency(goal.monthly)}
+                            </div>
+                            <div class="progress-bar" style="margin-top: 8px;">
+                                <div class="progress-fill" style="width: ${Math.min(progress, 100)}%">${progress}%</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="months-badge">${months} months</div>
+                            <button class="delete-btn" style="margin-top: 10px;" onclick="deleteGoal(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+            listDiv.innerHTML = html;
+        }
+
+        // Delete Goal
+        async function deleteGoal(index) {
+            if (confirm('Delete this savings goal?')) {
+                goalsData.splice(index, 1);
+                await saveData();
+                renderGoalsList();
+                updateDashboard();
+            }
+        }
+
+        // Update AI Advisor
+        function updateAIAdvisor() {
+            const totals = calculateTotals();
+            
+            document.getElementById('aiSavingsRate').textContent = totals.savingsRate + '%';
+            
+            let healthStatus = '';
+            if (totals.savingsRate >= 30) healthStatus = '💚 Excellent (30%+)';
+            else if (totals.savingsRate >= 20) healthStatus = '💛 Good (20%+)';
+            else if (totals.savingsRate >= 10) healthStatus = '🧡 Fair (10%+)';
+            else healthStatus = '❤️ Poor - Save More!';
+            document.getElementById('aiHealthStatus').textContent = healthStatus;
+            
+            // Budget optimization suggestions
+            let suggestionsHtml = '';
+            Object.keys(budgetData).forEach(category => {
+                const budget = budgetData[category];
+                const spent = expenseData
+                    .filter(e => e.category === category)
+                    .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+                
+                let suggestion = '';
+                if (spent === 0) {
+                    suggestion = 'No spending yet - Great start!';
+                } else if (spent > budget * 1.2) {
+                    suggestion = `⚠️ ALERT: Overspending by ${formatCurrency(spent - budget)}! Cut back immediately.`;
+                } else if (spent < budget * 0.7) {
+                    suggestion = `✅ EXCELLENT! You can save ${formatCurrency(budget - spent)} more this month.`;
+                } else {
+                    suggestion = '✅ Perfect pace! Stay on track.';
+                }
+                
+                suggestionsHtml += `
+                    <div class="ai-suggestion">
+                        <strong>${category}:</strong> Budget: ${formatCurrency(budget)}, Spent: ${formatCurrency(spent)}<br>
+                        ${suggestion}
+                    </div>
+                `;
+            });
+            document.getElementById('aiSuggestions').innerHTML = suggestionsHtml;
+            
+            // Investment suggestions
+            const available = totals.totalBudget - totals.totalExpenses;
+            let investmentHtml = `<p style="margin-bottom: 15px;"><strong>Available for Investment:</strong> ${formatCurrency(available)}</p>`;
+            
+            if (available >= 10000) {
+                investmentHtml += `
+                    <div class="ai-suggestion">
+                        <strong>Fixed Deposit (Safe):</strong> Low Risk - 6-7% returns<br>
+                        ✅ Invest ${formatCurrency(available * 0.3)} in FD for guaranteed returns
+                    </div>
+                `;
+            }
+            
+            if (available >= 5000) {
+                investmentHtml += `
+                    <div class="ai-suggestion">
+                        <strong>Mutual Funds SIP:</strong> Medium Risk - 10-12% returns<br>
+                        ✅ Start SIP of ${formatCurrency(available * 0.3)} per month
+                    </div>
+                `;
+            }
+            
+            if (available >= 1000) {
+                investmentHtml += `
+                    <div class="ai-suggestion">
+                        <strong>Recurring Deposit:</strong> Zero Risk - 6% returns<br>
+                        ✅ Start RD of ${formatCurrency(available * 0.2)} per month
+                    </div>
+                `;
+            }
+            
+            if (available < 1000) {
+                investmentHtml += '<p style="color: var(--danger);">⚠️ Increase your savings to unlock investment opportunities!</p>';
+            }
+            
+            document.getElementById('investmentSuggestions').innerHTML = investmentHtml;
+        }
+
+        // Set default date to today
+        document.querySelectorAll('input[type="date"]').forEach(input => {
+            input.value = new Date().toISOString().split('T')[0];
+        });
+
+        // Initialize app
+        loadData();
+    </script>
 </body>
 </html>
