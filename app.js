@@ -2,18 +2,23 @@
 // SUPABASE CONFIGURATION
 // ========================================
 // TODO: Replace with your Supabase credentials
-const SUPABASE_URL = 'https://ibwhxapresrcmyzumcoh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlid2h4YXByZXNyY215enVtY29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NDEwOTYsImV4cCI6MjA4NjExNzA5Nn0.aWs7bgiXF6ObCG0e9JK07MLDCbIoy9L6XPA0tVQ1G14';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-// Initialize Supabase
-   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Initialize Supabase client
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // ========================================
-// DATA STORAGE (Using localStorage for demo)
-// Replace with Supabase calls
+// DATA STORAGE
 // ========================================
 class DataStorage {
     static async get(key) {
+        // If Supabase is not configured, use localStorage
+        if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : [];
+        }
+        
         try {
             const { data, error } = await supabase.from(key).select('*');
             if (error) throw error;
@@ -25,6 +30,12 @@ class DataStorage {
     }
     
     static async set(key, value) {
+        // If Supabase is not configured, use localStorage
+        if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+            localStorage.setItem(key, JSON.stringify(value));
+            return;
+        }
+        
         // For budgets
         if (key === 'budgets') {
             const budgetArray = Object.keys(value).map(category => ({
@@ -42,9 +53,18 @@ class DataStorage {
     }
     
     static async add(key, item) {
+        // If Supabase is not configured, use localStorage
+        if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+            const items = JSON.parse(localStorage.getItem(key) || '[]');
+            item.id = Date.now() + Math.random();
+            items.push(item);
+            localStorage.setItem(key, JSON.stringify(items));
+            return item;
+        }
+        
         try {
             delete item.id; // Let database create ID
-            const { data, error } = await supabase.from(key).insert([item]).select();
+            const { data, error} = await supabase.from(key).insert([item]).select();
             if (error) throw error;
             return data[0];
         } catch (err) {
@@ -54,6 +74,14 @@ class DataStorage {
     }
     
     static async delete(key, id) {
+        // If Supabase is not configured, use localStorage
+        if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+            const items = JSON.parse(localStorage.getItem(key) || '[]');
+            const filtered = items.filter(item => item.id !== id);
+            localStorage.setItem(key, JSON.stringify(filtered));
+            return;
+        }
+        
         try {
             const { error } = await supabase.from(key).delete().eq('id', id);
             if (error) throw error;
@@ -62,34 +90,15 @@ class DataStorage {
         }
     }
 }
-    
-    static set(key, value) {
-        localStorage.setItem(key, JSON.stringify(value));
-    }
-    
-    static add(key, item) {
-        const items = this.get(key);
-        item.id = Date.now() + Math.random();
-        items.push(item);
-        this.set(key, items);
-        return item;
-    }
-    
-    static delete(key, id) {
-        const items = this.get(key);
-        const filtered = items.filter(item => item.id !== id);
-        this.set(key, filtered);
-    }
-}
 
 // ========================================
 // APP STATE
 // ========================================
 let currentTab = 'dashboard';
-let incomes = DataStorage.get('incomes');
-let expenses = DataStorage.get('expenses');
+let incomes = [];
+let expenses = [];
 let budgets = getDefaultBudgets();
-let emis = DataStorage.get('emis');
+let emis = [];
 
 function getDefaultBudgets() {
     return {
@@ -108,33 +117,55 @@ function getDefaultBudgets() {
 // INITIALIZATION
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
-       await loadAllData();
-       initializeTabs();
-       initializeForms();
-       setDefaultDates();
-       loadBudgetValues();
-       updateDashboard();
-   });
-   
-   async function loadAllData() {
-       incomes = await DataStorage.get('incomes');
-       expenses = await DataStorage.get('expenses');
-       emis = await DataStorage.get('emis');
-       
-       // Load budgets
-       const budgetData = await DataStorage.get('budgets');
-       if (budgetData && budgetData.length > 0) {
-           budgets = {};
-           budgetData.forEach(item => {
-               budgets[item.category] = item.amount;
-           });
-       }
-   }
+    console.log('App starting...');
+    await loadAllData();
+    initializeTabs();
+    initializeForms();
+    setDefaultDates();
+    loadBudgetValues();
+    updateDashboard();
+    console.log('App loaded successfully!');
+});
+
+async function loadAllData() {
+    console.log('Loading data...');
+    
+    // Load incomes
+    incomes = await DataStorage.get('incomes');
+    console.log('Incomes loaded:', incomes.length);
+    
+    // Load expenses
+    expenses = await DataStorage.get('expenses');
+    console.log('Expenses loaded:', expenses.length);
+    
+    // Load EMIs
+    emis = await DataStorage.get('emis');
+    console.log('EMIs loaded:', emis.length);
+    
+    // Load budgets
+    if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+        const savedBudgets = localStorage.getItem('budgets');
+        if (savedBudgets) {
+            budgets = JSON.parse(savedBudgets);
+        }
+    } else {
+        const budgetData = await DataStorage.get('budgets');
+        if (budgetData && budgetData.length > 0) {
+            budgets = {};
+            budgetData.forEach(item => {
+                budgets[item.category] = item.amount;
+            });
+        }
+    }
+    console.log('Budgets loaded:', Object.keys(budgets).length);
+}
 
 function setDefaultDates() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('incomeDate').value = today;
-    document.getElementById('expenseDate').value = today;
+    const incomeDate = document.getElementById('incomeDate');
+    const expenseDate = document.getElementById('expenseDate');
+    if (incomeDate) incomeDate.value = today;
+    if (expenseDate) expenseDate.value = today;
 }
 
 function loadBudgetValues() {
@@ -165,13 +196,15 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
     
     // Update content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
+    const activeContent = document.getElementById(`${tabName}-tab`);
+    if (activeContent) activeContent.classList.add('active');
     
     currentTab = tabName;
     
@@ -192,56 +225,70 @@ function switchTab(tabName) {
 // ========================================
 function initializeForms() {
     // Income Form
-    document.getElementById('incomeForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        addIncome();
-    });
+    const incomeForm = document.getElementById('incomeForm');
+    if (incomeForm) {
+        incomeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addIncome();
+        });
+    }
     
     // Expense Form
-    document.getElementById('expenseForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        addExpense();
-    });
+    const expenseForm = document.getElementById('expenseForm');
+    if (expenseForm) {
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addExpense();
+        });
+    }
     
     // Budget Form
-    document.getElementById('budgetForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveBudget();
-    });
+    const budgetForm = document.getElementById('budgetForm');
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveBudget();
+        });
+    }
     
     // EMI Form
-    document.getElementById('emiForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        addEMI();
-    });
+    const emiForm = document.getElementById('emiForm');
+    if (emiForm) {
+        emiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addEMI();
+        });
+    }
 }
 
 async function addIncome() {
-       const income = {
-           date: document.getElementById('incomeDate').value,
-           source: document.getElementById('incomeSource').value,
-           description: document.getElementById('incomeDescription').value,
-           amount: parseFloat(document.getElementById('incomeAmount').value)
-       };
-       
-       await DataStorage.add('incomes', income);
-       incomes = await DataStorage.get('incomes');
-       
-       document.getElementById('incomeForm').reset();
-       setDefaultDates();
-       showSuccess('Income added successfully! 💰');
-       renderIncomeList();
-       updateDashboard();
-   }
+    console.log('Adding income...');
+    const income = {
+        date: document.getElementById('incomeDate').value,
+        source: document.getElementById('incomeSource').value,
+        description: document.getElementById('incomeDescription').value,
+        amount: parseFloat(document.getElementById('incomeAmount').value)
+    };
+    
+    await DataStorage.add('incomes', income);
+    incomes = await DataStorage.get('incomes');
+    
+    document.getElementById('incomeForm').reset();
+    setDefaultDates();
+    showSuccess('Income added successfully! 💰');
+    renderIncomeList();
+    updateDashboard();
+    console.log('Income added!');
 }
 
 async function addExpense() {
+    console.log('Adding expense...');
     const expense = {
         date: document.getElementById('expenseDate').value,
         category: document.getElementById('expenseCategory').value,
         description: document.getElementById('expenseDescription').value,
         amount: parseFloat(document.getElementById('expenseAmount').value),
-        paymentMethod: document.getElementById('paymentMethod').value
+        payment_method: document.getElementById('paymentMethod').value
     };
     
     await DataStorage.add('expenses', expense);
@@ -252,9 +299,11 @@ async function addExpense() {
     showSuccess('Expense added successfully! 📝');
     renderExpenseList();
     updateDashboard();
+    console.log('Expense added!');
 }
 
 async function saveBudget() {
+    console.log('Saving budget...');
     const categories = ['Groceries', 'Transportation', 'DiningOut', 'Utilities', 
                        'Entertainment', 'Healthcare', 'Shopping', 'Other'];
     
@@ -269,13 +318,15 @@ async function saveBudget() {
     await DataStorage.set('budgets', budgets);
     showSuccess('Budget saved successfully! 🎯');
     updateDashboard();
+    console.log('Budget saved!');
 }
 
 async function addEMI() {
+    console.log('Adding EMI...');
     const emi = {
         name: document.getElementById('emiName').value,
         lender: document.getElementById('emiLender').value,
-        paymentDate: parseInt(document.getElementById('emiDate').value),
+        payment_date: parseInt(document.getElementById('emiDate').value),
         amount: parseFloat(document.getElementById('emiAmount').value)
     };
     
@@ -286,21 +337,22 @@ async function addEMI() {
     showSuccess('EMI added successfully! 💳');
     renderEMIList();
     updateDashboard();
+    console.log('EMI added!');
 }
 
 // ========================================
 // CALCULATIONS
 // ========================================
 function calculateTotalIncome() {
-    return incomes.reduce((sum, item) => sum + item.amount, 0);
+    return incomes.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
 }
 
 function calculateTotalExpenses() {
-    return expenses.reduce((sum, item) => sum + item.amount, 0);
+    return expenses.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
 }
 
 function calculateTotalEMI() {
-    return emis.reduce((sum, item) => sum + item.amount, 0);
+    return emis.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
 }
 
 function calculateNetSavings() {
@@ -320,7 +372,7 @@ function calculateBudgetUsed() {
 function getExpensesByCategory(category) {
     return expenses
         .filter(e => e.category === category)
-        .reduce((sum, e) => sum + e.amount, 0);
+        .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 }
 
 function getWeekNumber(date) {
@@ -342,7 +394,7 @@ function getExpensesByWeek(weekNum) {
                    expenseDate.getFullYear() === currentYear &&
                    getWeekNumber(e.date) === weekNum;
         })
-        .reduce((sum, e) => sum + e.amount, 0);
+        .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 }
 
 // ========================================
@@ -361,14 +413,20 @@ function updateSummaryCards() {
     const netSavings = calculateNetSavings();
     const budgetUsed = calculateBudgetUsed();
     
-    document.getElementById('totalIncome').textContent = formatCurrency(totalIncome);
-    document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
-    document.getElementById('netSavings').textContent = formatCurrency(netSavings);
-    document.getElementById('budgetUsed').textContent = budgetUsed.toFixed(1) + '%';
+    const incomeEl = document.getElementById('totalIncome');
+    const expensesEl = document.getElementById('totalExpenses');
+    const savingsEl = document.getElementById('netSavings');
+    const budgetEl = document.getElementById('budgetUsed');
+    
+    if (incomeEl) incomeEl.textContent = formatCurrency(totalIncome);
+    if (expensesEl) expensesEl.textContent = formatCurrency(totalExpenses);
+    if (savingsEl) savingsEl.textContent = formatCurrency(netSavings);
+    if (budgetEl) budgetEl.textContent = budgetUsed.toFixed(1) + '%';
 }
 
 function renderBudgetStatus() {
     const container = document.getElementById('budgetStatusList');
+    if (!container) return;
     
     if (Object.keys(budgets).length === 0) {
         container.innerHTML = '<div class="empty-state">📊<p>No budget set. Go to Budget tab to set up.</p></div>';
@@ -410,7 +468,7 @@ function renderBudgetStatus() {
         `;
     });
     
-    // Add total summary at the end
+    // Add total summary
     const totalRemaining = totalBudgeted - totalSpent;
     const totalPercentage = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
     let totalProgressClass = '';
@@ -439,6 +497,8 @@ function renderBudgetStatus() {
 
 function renderWeeklyBudget() {
     const container = document.getElementById('weeklyBudgetList');
+    if (!container) return;
+    
     const totalBudget = calculateTotalBudget();
     const weeklyBudget = totalBudget / 4;
     
@@ -475,6 +535,7 @@ function renderWeeklyBudget() {
 
 function renderRecentTransactions() {
     const container = document.getElementById('recentTransactions');
+    if (!container) return;
     
     // Combine and sort all transactions
     const allTransactions = [
@@ -483,7 +544,7 @@ function renderRecentTransactions() {
     ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
     
     if (allTransactions.length === 0) {
-        container.innerHTML = '<div class="empty-state">📋<p>No transactions yet</p></div>';
+        container.innerHTML = '<div class="empty-state">📋<p>No transactions yet. Add income or expenses to get started!</p></div>';
         return;
     }
     
@@ -510,9 +571,10 @@ function renderRecentTransactions() {
 
 function renderIncomeList() {
     const container = document.getElementById('incomeList');
+    if (!container) return;
     
     if (incomes.length === 0) {
-        container.innerHTML = '<div class="empty-state">💰<p>No income recorded yet</p></div>';
+        container.innerHTML = '<div class="empty-state">💰<p>No income recorded yet. Add your first income above!</p></div>';
         return;
     }
     
@@ -539,9 +601,10 @@ function renderIncomeList() {
 
 function renderExpenseList() {
     const container = document.getElementById('expenseList');
+    if (!container) return;
     
     if (expenses.length === 0) {
-        container.innerHTML = '<div class="empty-state">💸<p>No expenses recorded yet</p></div>';
+        container.innerHTML = '<div class="empty-state">💸<p>No expenses recorded yet. Add your first expense above!</p></div>';
         return;
     }
     
@@ -553,7 +616,7 @@ function renderExpenseList() {
             <div class="transaction-item">
                 <div class="item-info">
                     <h4>${expense.category}</h4>
-                    <p>${formatDate(expense.date)} • ${expense.description} • ${expense.paymentMethod}</p>
+                    <p>${formatDate(expense.date)} • ${expense.description} • ${expense.payment_method || expense.paymentMethod}</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div class="item-amount amount-negative">-${formatCurrency(expense.amount)}</div>
@@ -568,23 +631,25 @@ function renderExpenseList() {
 
 function renderEMIList() {
     const container = document.getElementById('emiList');
+    if (!container) return;
     
     if (emis.length === 0) {
-        container.innerHTML = '<div class="empty-state">💳<p>No EMIs added yet</p></div>';
+        container.innerHTML = '<div class="empty-state">💳<p>No EMIs added yet. Add your first EMI above!</p></div>';
         return;
     }
     
     let html = '';
     emis.forEach(emi => {
         const today = new Date().getDate();
-        const daysUntil = emi.paymentDate - today;
+        const paymentDate = emi.payment_date || emi.paymentDate;
+        const daysUntil = paymentDate - today;
         const status = daysUntil <= 0 ? '⚠️ DUE NOW' : daysUntil <= 5 ? '⚠️ DUE SOON' : '';
         
         html += `
             <div class="emi-item">
                 <div class="item-info">
                     <h4>${emi.name} ${status}</h4>
-                    <p>${emi.lender} • Payment Date: ${emi.paymentDate}th of each month</p>
+                    <p>${emi.lender} • Payment Date: ${paymentDate}th of each month</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div class="item-amount">${formatCurrency(emi.amount)}/month</div>
@@ -600,30 +665,30 @@ function renderEMIList() {
 // ========================================
 // DELETE FUNCTIONS
 // ========================================
-function deleteIncome(id) {
+async function deleteIncome(id) {
     if (confirm('Delete this income entry?')) {
-        DataStorage.delete('incomes', id);
-        incomes = DataStorage.get('incomes');
+        await DataStorage.delete('incomes', id);
+        incomes = await DataStorage.get('incomes');
         renderIncomeList();
         updateDashboard();
         showSuccess('Income deleted');
     }
 }
 
-function deleteExpense(id) {
+async function deleteExpense(id) {
     if (confirm('Delete this expense entry?')) {
-        DataStorage.delete('expenses', id);
-        expenses = DataStorage.get('expenses');
+        await DataStorage.delete('expenses', id);
+        expenses = await DataStorage.get('expenses');
         renderExpenseList();
         updateDashboard();
         showSuccess('Expense deleted');
     }
 }
 
-function deleteEMI(id) {
+async function deleteEMI(id) {
     if (confirm('Delete this EMI entry?')) {
-        DataStorage.delete('emis', id);
-        emis = DataStorage.get('emis');
+        await DataStorage.delete('emis', id);
+        emis = await DataStorage.get('emis');
         renderEMIList();
         updateDashboard();
         showSuccess('EMI deleted');
@@ -634,7 +699,7 @@ function deleteEMI(id) {
 // UTILITIES
 // ========================================
 function formatCurrency(amount) {
-    return '₹' + amount.toLocaleString('en-IN', {
+    return '₹' + parseFloat(amount || 0).toLocaleString('en-IN', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     });
