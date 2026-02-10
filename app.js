@@ -2,8 +2,8 @@
 // SUPABASE CONFIGURATION
 // ========================================
 // TODO: Replace with your Supabase credentials
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://xfdgjxfxfdklzaaqukqq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmZGdqeGZ4ZmRrbHphYXF1a3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjY4MzMsImV4cCI6MjA4NjMwMjgzM30.IUOJ5bhedxnwp0pbAUbkJYoJELSjk0hj7X7i1Kr_V2c';
 
 // Initialize Supabase client
 const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
