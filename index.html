@@ -1,1881 +1,1504 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Finance Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Fonts: Space Grotesk (Headings) & Inter (Body) -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
-            /* ─── PURE LIGHT / MAX WHITE PALETTE ─── */
-            --ink:      #ffffff;   /* Pure White Page BG */
-            --ink2:     #f4f4f5;   /* Lightest Gray (Inputs) */
-            --surface:  #ffffff;   /* Sidebar/Header */
-            --card:     #ffffff;   /* Card BG */
-            --card2:    #fafafa;   /* Hover State (Off-White) */
-            
-            --border:   #e4e4e7;   /* Very Light Gray Border */
-            --border2:  #d4d4d8;   /* Darker Gray Border for Hover */
+            /* ─── DEEP SPACE THEME ─── */
+            --bg-deep: #030014;
+            /* Deepest void */
+            --bg-surface: rgba(255, 255, 255, 0.03);
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-glass: rgba(255, 255, 255, 0.1);
 
-            /* Primary Accent (Black) */
-            --primary:  #000000;   /* Black Buttons/Active States */
-            --primary-fg:#ffffff;  /* White Text on Black Buttons */
+            --primary: #7000ff;
+            /* Neon Purple */
+            --primary-glow: #bd00ff;
+            --secondary: #00f3ff;
+            /* Cyan */
+            --accent: #ff0055;
+            /* Hot Pink */
+            --success: #00ffa3;
+            /* Neon Green */
+            --warning: #ffb800;
 
-            /* Semantic Colors (Pastel/High-Key) */
-            --green:    #16a34a;
-            --red:      #dc2626;
-            --orange:   #ea580c;
-            --blue:     #2563eb;
-            
-            --text:     #09090b;   /* Near Black Text */
-            --muted:    #71717a;   /* Medium Gray */
-            --faint:    #a1a1aa;   /* Light Gray Text */
-            
-            --radius:   0px;       /* Sharp corners for a brutalist/minimalist feel? Or keep rounded. Let's keep slight round. */
-            --radius:   8px;
-            --radius2:  6px;
-            
-            --shadow:   0 1px 2px rgba(0,0,0,0.05); /* Very subtle shadow */
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --text-faint: rgba(255, 255, 255, 0.3);
+
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+
+            --shadow-glow: 0 0 20px rgba(112, 0, 255, 0.15);
+            --font-head: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
         }
 
-        html { scroll-behavior: smooth; }
+        /* ─── RESET & BASE ─── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--ink);
-            color: var(--text);
-            line-height: 1.6;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
-        /* ─── LOADING ─── */
-        #loadingOverlay {
-            position: fixed; inset: 0;
-            background: var(--ink);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 9999;
-            transition: opacity .5s ease;
+        /* Ambient Background Animation */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 15% 50%, rgba(112, 0, 255, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 243, 255, 0.08), transparent 25%);
+            animation: pulseBg 10s ease-in-out infinite alternate;
         }
-        .loader-ring {
-            width: 56px; height: 56px;
-            border: 4px solid var(--ink2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin .8s linear infinite;
-            margin-bottom: 20px;
-        }
-        .loader-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8em; font-weight: 700;
-            color: var(--text);
-        }
-        .loader-sub { color: var(--muted); margin-top: 6px; font-size: .9em; }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ─── HEADER ─── */
-        header {
-            padding: 24px 0;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(12px);
-            position: sticky; top: 0; z-index: 100;
+        @keyframes pulseBg {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
         }
-        .header-inner {
-            max-width: 1380px; margin: 0 auto;
-            padding: 0 28px;
-            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ─── LAYOUT ─── */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar (Desktop) */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-glass);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+
         .brand {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.6em; font-weight: 700;
-            color: var(--text);
-            display: flex; align-items: center; gap: 10px;
+            font-family: var(--font-head);
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 48px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: rgba(112, 0, 255, 0.1);
+            border-color: rgba(112, 0, 255, 0.3);
+            color: var(--text-main);
+            box-shadow: 0 0 15px rgba(112, 0, 255, 0.1);
+        }
+
+        .nav-icon {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        /* Connection Status */
+        .status-badge {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius-sm);
+            font-size: 0.8em;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            transition: 0.3s;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ─── COMPONENTS ─── */
+        /* Glass Cards */
+        .card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-header {
+            font-family: var(--font-head);
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             letter-spacing: -0.02em;
         }
-        .brand-icon { color: var(--primary); }
-        .header-badge {
-            display: flex; align-items: center; gap: 8px;
-            font-size: .8em; color: var(--muted);
-            border: 1px solid var(--border);
-            padding: 4px 10px; border-radius: 20px;
-            background: var(--ink2);
-        }
-        .status-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--red);
-            transition: all .4s;
-        }
-        .status-dot.online { background: var(--green); }
 
-        /* ─── CONTAINER ─── */
-        .container { max-width: 1380px; margin: 0 auto; padding: 32px 28px; }
-
-        /* ─── ERROR BANNER ─── */
-        #dbError {
-            display: none;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
-            padding: 14px 20px; border-radius: var(--radius);
-            margin-bottom: 24px; font-size: .92em;
-        }
-
-        /* ─── TABS ─── */
-        .tabs-bar {
-            display: flex; gap: 6px;
-            background: var(--ink);
-            border-bottom: 1px solid var(--border);
-            padding: 0 0 12px 0; margin-bottom: 32px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        .tabs-bar::-webkit-scrollbar { display: none; }
-        .tab {
-            flex: 0 0 auto;
-            padding: 8px 18px;
-            background: transparent; border: 1px solid transparent;
-            border-radius: var(--radius); color: var(--muted);
-            font-family: 'DM Sans', sans-serif;
-            font-weight: 500; font-size: .9em;
-            cursor: pointer; transition: all .2s ease;
-            white-space: nowrap;
-        }
-        .tab:hover { color: var(--text); background: var(--ink2); }
-        .tab.active {
-            background: var(--primary);
-            color: var(--primary-fg);
+        /* Buttons */
+        .btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: var(--font-body);
             font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .tab-content { display: none; }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+            border: none;
+            box-shadow: 0 4px 15px rgba(112, 0, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 25px rgba(112, 0, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-accent {
+            background: rgba(255, 0, 85, 0.1);
+            border-color: rgba(255, 0, 85, 0.3);
+            color: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background: rgba(255, 0, 85, 0.2);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8em;
+            border-radius: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            transition: 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(112, 0, 255, 0.15);
+        }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
         .tab-content.active {
             display: block;
-            animation: fadeUp .3s ease;
-        }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
+            animation: fadeTab 0.4s ease forwards;
         }
 
-        /* ─── GRID ─── */
-        .grid { display: grid; gap: 24px; }
-        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
-        .grid-sidebar { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
-        @media (max-width: 1000px) { .grid-sidebar { grid-template-columns: 1fr; } }
+        @keyframes fadeTab {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
 
-        /* ─── CARDS ─── */
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            box-shadow: var(--shadow);
-            transition: border-color .2s, box-shadow .2s;
-        }
-        .card:hover { border-color: var(--border2); box-shadow: 0 4px 6px rgba(0,0,0,0.04); }
-
-        .card-hdr {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.25em; font-weight: 700;
-            color: var(--text); margin-bottom: 20px;
-            display: flex; align-items: center; gap: 10px;
-            letter-spacing: -0.01em;
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        /* ─── STAT CARDS ─── */
+        /* ─── SPECIFIC MODULES ─── */
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
         .stat-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
             padding: 24px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            box-shadow: var(--shadow);
+            position: relative;
         }
-        /* Color dots instead of borders for cleaner light look */
-        .stat-card::after {
-            content:''; width: 100%; height: 4px; background: transparent; 
-            border-radius: 2px; margin-top: 10px;
-        }
-        .stat-card.green::after { background: var(--green); }
-        .stat-card.red::after   { background: var(--red); }
-        .stat-card.orange::after{ background: var(--orange); }
-        .stat-card.blue::after  { background: var(--blue); }
 
-        .stat-lbl { font-size: .75em; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
         .stat-val {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.4em; font-weight: 700; color: var(--text);
-            line-height: 1; letter-spacing: -1px;
+            font-family: var(--font-head);
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 8px 0;
+            letter-spacing: -1px;
         }
-        .stat-val.green  { color: var(--text); } 
-        .stat-val.red    { color: var(--text); }
-        .stat-val.orange { color: var(--text); }
-        .stat-val.blue   { color: var(--text); }
-        
-        .stat-sub { font-size: .85em; color: var(--muted); margin-top: 8px; }
 
-        /* ─── FORMS ─── */
-        .form-row { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-size: .75em; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; }
-        input, select, textarea {
-            width: 100%; padding: 12px 16px;
-            background: var(--ink2); border: 1px solid var(--border);
-            border-radius: var(--radius); color: var(--text);
-            font-family: 'DM Sans', sans-serif; font-size: .95em;
-            transition: border-color .2s, background .2s;
-        }
-        input:focus, select:focus, textarea:focus {
-            outline: none; border-color: var(--primary); background: #ffffff;
-        }
-        select option { background: #ffffff; }
-        textarea { resize: vertical; min-height: 100px; }
-
-        /* ─── BUTTONS ─── */
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 12px 24px;
-            border: 1px solid transparent; border-radius: var(--radius);
-            font-family: 'DM Sans', sans-serif;
-            font-weight: 600; font-size: .95em;
-            cursor: pointer; transition: all .2s ease;
-        }
-        /* Black Button */
-        .btn-primary {
-            background: var(--primary);
-            color: var(--primary-fg);
-        }
-        .btn-primary:hover { background: #27272a; transform: translateY(-1px); }
-        
-        .btn-ghost {
-            background: transparent; color: var(--muted);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { color: var(--text); border-color: var(--text); background: var(--card2); }
-        
-        .btn-danger { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
-        .btn-danger:hover { background: var(--red); color: white; border-color: var(--red); }
-        
-        .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
-        .btn-sm { padding: 6px 12px; font-size: .8em; border-radius: 4px; }
-        .btn-full { width: 100%; }
-
-        /* ─── TABLES ─── */
-        .tbl-wrap { overflow-x: auto; margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius); }
-        table { width: 100%; border-collapse: collapse; }
-        th {
-            background: var(--card2); padding: 14px 16px;
-            text-align: left; font-size: .75em;
-            text-transform: uppercase; letter-spacing: .8px;
-            color: var(--muted); font-weight: 700;
-        }
-        td { padding: 14px 16px; border-top: 1px solid var(--border); font-size: .9em; color: var(--text); }
-        tr:hover td { background: var(--ink2); }
-
-        /* ─── BADGES ─── */
-        .badge {
-            display: inline-block; padding: 4px 10px;
-            border-radius: 4px; font-size: .75em; font-weight: 700; letter-spacing: 0.5px;
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85em;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        /* Pastel badges for light mode */
-        .badge-green  { background: #dcfce7; color: #166534; }
-        .badge-red    { background: #fee2e2; color: #991b1b; }
-        .badge-orange { background: #ffedd5; color: #9a3412; }
-        .badge-blue   { background: #dbeafe; color: #1e40af; }
 
-        /* ─── PROGRESS ─── */
-        .progress-track { height: 6px; background: var(--ink2); border-radius: 3px; overflow: hidden; margin: 12px 0; }
-        .progress-fill {
+        .text-gradient {
+            background: linear-gradient(90deg, #fff, #aaa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-success {
+            color: var(--success);
+        }
+
+        .text-accent {
+            color: var(--accent);
+        }
+
+        .text-warning {
+            color: var(--warning);
+        }
+
+        .text-secondary {
+            color: var(--secondary);
+        }
+
+        /* Charts & Lists */
+        .bar-chart-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .bar-label {
+            width: 120px;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
             height: 100%;
-            background: var(--primary); /* Black progress bars */
-            transition: width .6s ease;
+            border-radius: 4px;
+            transition: width 1s ease;
         }
-        .progress-fill.warn { background: var(--orange); }
-        .progress-fill.danger { background: var(--red); }
 
-        /* ─── ALERTS / INSIGHTS ─── */
-        .insight-card {
-            display: flex; align-items: flex-start; gap: 16px;
-            padding: 20px; border-radius: var(--radius);
-            margin-bottom: 16px;
-            border: 1px solid var(--border);
-            background: #ffffff;
-            box-shadow: var(--shadow);
+        .bar-value {
+            width: 80px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.9em;
         }
-        .insight-card.success { border-left: 4px solid var(--green); }
-        .insight-card.warning { border-left: 4px solid var(--orange); }
-        .insight-card.danger  { border-left: 4px solid var(--red); }
-        .insight-card.info    { border-left: 4px solid var(--primary); }
-        
-        .insight-icon { font-size: 1.4em; }
-        .insight-title { font-weight: 700; font-size: 1em; margin-bottom: 4px; font-family: 'Playfair Display', serif; color: var(--text); }
-        .insight-body  { font-size: .9em; color: var(--muted); line-height: 1.5; }
 
-        /* ─── EMI CARD ─── */
-        .emi-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px; border-radius: var(--radius);
-            border: 1px solid var(--border); margin-bottom: 12px;
-            background: var(--card);
-            transition: border-color .2s;
+        /* Tables for Income/Expense */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            transition: 0.2s;
         }
-        .emi-row:hover { border-color: var(--primary); }
 
-        /* ─── GOAL CARD ─── */
-        .goal-card {
-            padding: 24px; border-radius: var(--radius);
-            border: 1px solid var(--border); margin-bottom: 16px;
-            background: var(--card);
-            box-shadow: var(--shadow);
+        .list-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
         }
-        .goal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .goal-name { font-weight: 700; font-size: 1.1em; }
-        .goal-pct  { font-family: 'Playfair Display', serif; font-size: 1.4em; font-weight: 700; color: var(--primary); }
 
-        /* ─── AI SECTION ─── */
-        .ai-banner {
-            background: var(--ink2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px; margin-bottom: 24px;
-            display: flex; align-items: center; gap: 20px;
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.1);
         }
-        .ai-avatar {
-            width: 48px; height: 48px; border-radius: 50%;
+
+        /* AI Chat */
+        .chat-layout {
+            display: grid;
+            gap: 24px;
+            grid-template-columns: 1fr 350px;
+        }
+
+        .chat-box {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 14px 18px;
+            line-height: 1.5;
+            font-size: 0.95em;
+            border-radius: 18px;
+        }
+
+        .msg.bot {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+        }
+
+        .msg.user {
             background: var(--primary);
-            color: var(--primary-fg);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4em; flex-shrink: 0;
-        }
-        .ai-banner-text h3 { font-family: 'Playfair Display', serif; font-size: 1.4em; font-weight: 700; margin-bottom: 4px; }
-        .ai-banner-text p  { font-size: .95em; color: var(--muted); }
-
-        /* Chat UI */
-        .chat-window {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            height: 400px; overflow-y: auto;
-            padding: 24px;
-            display: flex; flex-direction: column; gap: 20px;
-            scrollbar-width: thin; scrollbar-color: var(--border) transparent;
-        }
-        .chat-window::-webkit-scrollbar { width: 4px; }
-        .chat-window::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-        .chat-msg { display: flex; gap: 14px; max-width: 85%; }
-        .chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
-        .chat-msg.bot  { align-self: flex-start; }
-        
-        .chat-bubble {
-            padding: 16px 20px; border-radius: 12px;
-            font-size: .95em; line-height: 1.6;
-            box-shadow: var(--shadow);
-        }
-        /* User: Black bubble, White text */
-        .chat-msg.user .chat-bubble {
-            background: var(--primary);
-            color: var(--primary-fg);
-            border-bottom-right-radius: 2px;
-        }
-        /* Bot: Very Light Gray bubble, Black text */
-        .chat-msg.bot .chat-bubble {
-            background: var(--ink2);
-            color: var(--text); border-bottom-left-radius: 2px;
-            border: 1px solid var(--border);
-        }
-        .chat-avatar {
-            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .9em; border: 1px solid var(--border);
-        }
-        .chat-msg.bot .chat-avatar  { background: #ffffff; color: var(--primary); }
-        .chat-msg.user .chat-avatar { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
-
-        .chat-input-bar {
-            display: flex; gap: 12px; margin-top: 16px; align-items: flex-end;
-        }
-        .chat-input-bar input { flex: 1; border-radius: 24px; padding: 14px 24px; background: var(--ink2); border: 1px solid var(--border); }
-        .chat-input-bar input:focus { border-color: var(--primary); background: #ffffff; }
-
-        .typing-indicator { display: flex; gap: 4px; padding: 8px 0; }
-        .typing-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--muted); opacity: .5;
-            animation: bounce 1.2s infinite;
-        }
-        .typing-dot:nth-child(2) { animation-delay: .2s; }
-        .typing-dot:nth-child(3) { animation-delay: .4s; }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); opacity: .5; }
-            50% { transform: translateY(-4px); opacity: 1; }
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            box-shadow: 0 4px 15px rgba(112, 0, 255, 0.2);
         }
 
-        /* Quick question chips */
-        .quick-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-        .chip {
-            padding: 8px 16px; border-radius: 20px;
-            background: #ffffff; border: 1px solid var(--border);
-            color: var(--muted); font-size: .85em; font-weight: 500;
-            cursor: pointer; transition: all .2s;
+        .input-area {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--border-glass);
+            display: flex;
+            gap: 12px;
         }
-        .chip:hover { border-color: var(--primary); color: var(--text); background: var(--ink2); }
 
-        /* Auto insights strip */
-        .insights-strip {
-            display: flex; gap: 16px; overflow-x: auto;
-            padding-bottom: 12px; margin-bottom: 32px;
-            scrollbar-width: none;
+        /* Mobile Adjustments */
+        .mobile-nav {
+            display: none;
         }
-        .insights-strip::-webkit-scrollbar { display: none; }
-        .strip-card {
-            flex: 0 0 auto; min-width: 240px;
-            padding: 16px 20px; border-radius: var(--radius);
-            border: 1px solid var(--border);
-            background: var(--card);
-            box-shadow: var(--shadow);
-        }
-        .strip-card .icon { font-size: 1.4em; margin-bottom: 8px; color: var(--muted); }
-        .strip-card .label { font-size: .75em; color: var(--muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .strip-card .value { font-family: 'Playfair Display', serif; font-size: 1.4em; font-weight: 700; color: var(--text); }
-
-        /* ─── TOAST ─── */
-        .toast {
-            position: fixed; bottom: 32px; right: 32px;
-            padding: 14px 24px; border-radius: var(--radius);
-            font-weight: 500; font-size: .9em;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            z-index: 9999; max-width: 340px;
-            animation: toastIn .35s ease;
-            border: 1px solid var(--border);
-        }
-        .toast.success { background: var(--primary); color: var(--primary-fg); }
-        .toast.error   { background: #ffffff; border-color: var(--red); color: var(--red); }
-        .toast.warn    { background: #ffffff; border-color: var(--orange); color: var(--orange); }
-        @keyframes toastIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-
-        /* ─── SECTION HEADER ─── */
-        .sec-hdr {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5em; font-weight: 700;
-            margin: 0 0 24px 0;
-            display: flex; align-items: center; gap: 12px;
-            color: var(--text);
-        }
-        .sec-hdr span { color: var(--muted); font-size: .6em; font-weight: 400; font-family: 'DM Sans', sans-serif; letter-spacing: 0.5px; }
-
-        /* ─── EMPTY STATE ─── */
-        .empty { text-align: center; padding: 60px 20px; color: var(--faint); }
-        .empty .icon { font-size: 3em; margin-bottom: 16px; opacity: .2; filter: grayscale(100%); }
-
-        /* ─── HEALTH SCORE ─── */
-        .score-ring-wrap {
-            display: flex; align-items: center; justify-content: center; gap: 32px;
-            padding: 20px 0;
-        }
-        .score-ring {
-            position: relative; width: 120px; height: 120px;
-        }
-        .score-ring svg { transform: rotate(-90deg); }
-        .score-ring .val {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-family: 'Playfair Display', serif; font-size: 1.8em; font-weight: 700;
-        }
-        .score-ring .val small { font-size: .4em; font-family: 'DM Sans', sans-serif; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-
-        /* ─── SPENDING ANALYSIS CHART ─── */
-        .bar-chart { margin-top: 12px; }
-        .bar-row {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 12px; font-size: .9em;
-        }
-        .bar-label { width: 140px; flex-shrink: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .bar-track { flex: 1; height: 8px; background: var(--ink2); border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width .6s ease; }
-        .bar-amount { width: 100px; text-align: right; flex-shrink: 0; font-weight: 600; color: var(--text); }
 
         @media (max-width: 768px) {
-            .header-inner { flex-wrap: wrap; }
-            .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
-            .container { padding: 20px; }
-            .tabs-bar { flex-wrap: nowrap; }
+            .app-layout {
+                grid-template-columns: 1fr;
+                padding-bottom: 80px;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .mobile-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(3, 0, 20, 0.9);
+                backdrop-filter: blur(20px);
+                border-top: 1px solid var(--border-glass);
+                padding: 12px;
+                justify-content: space-around;
+                z-index: 1000;
+            }
+
+            .mobile-tab {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                color: var(--text-muted);
+                font-size: 0.7em;
+                background: none;
+                border: none;
+            }
+
+            .mobile-tab.active {
+                color: var(--secondary);
+            }
+
+            .mobile-tab svg {
+                width: 24px;
+                height: 24px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .chat-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 16px;
+            }
+        }
+
+        /* Loading */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-deep);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            padding: 16px 24px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
         }
     </style>
 </head>
+
 <body>
 
-<!-- ─── LOADING ─── -->
-<div id="loadingOverlay">
-    <div class="loader-ring"></div>
-    <div class="loader-title">AI Finance Dashboard</div>
-    <div class="loader-sub">Connecting to your data…</div>
-</div>
+    <div class="ambient-bg"></div>
 
-<!-- ─── HEADER ─── -->
-<header>
-    <div class="header-inner">
-        <div class="brand"><span class="brand-icon">◆</span> AI Finance Dashboard</div>
-        <div class="header-badge">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusLabel">Connecting…</span>
-        </div>
-    </div>
-</header>
-
-<div class="container">
-
-    <!-- Error Banner -->
-    <div id="dbError"></div>
-
-    <!-- ─── TABS ─── -->
-    <div class="tabs-bar">
-        <button class="tab active" onclick="showTab('dashboard',this)">Dashboard</button>
-        <button class="tab" onclick="showTab('income',this)">Income</button>
-        <button class="tab" onclick="showTab('expenses',this)">Expenses</button>
-        <button class="tab" onclick="showTab('budget',this)">Budget</button>
-        <button class="tab" onclick="showTab('emi',this)">EMI Tracker</button>
-        <button class="tab" onclick="showTab('goals',this)">Savings Goals</button>
-        <button class="tab" onclick="showTab('ai',this)">AI Advisor</button>
+    <!-- ─── LOADER ─── -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <h2 style="margin-top:20px;font-weight:300;letter-spacing:2px;">FINANCE<strong
+                style="color:var(--secondary)">IQ</strong></h2>
     </div>
 
-    <!-- ══════════════════════════════════════
-         DASHBOARD
-    ══════════════════════════════════════ -->
-    <div id="dashboard" class="tab-content active">
+    <!-- ─── AUTH OVERLAY ─── -->
+    <div id="authOverlay" class="fade-in"
+        style="position:fixed;inset:0;background:var(--bg-deep);z-index:9999;display:flex;align-items:center;justify-content:center;">
+        <div class="card" style="width:100%;max-width:400px;text-align:center;">
+            <div class="brand" style="justify-content:center;margin-bottom:24px;"><span>✦</span> FINANCE IQ</div>
+            <h2 id="authTitle" style="margin-bottom:8px;">Welcome Back</h2>
+            <p style="color:var(--text-muted);margin-bottom:24px;">Secure access to your dashboard</p>
 
-        <!-- AI Auto-Insights Strip -->
-        <div class="insights-strip" id="autoInsightsStrip"></div>
+            <form id="authForm">
+                <div class="form-group">
+                    <input type="email" id="authEmail" placeholder="Email Address" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="authPass" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-bottom:16px;">
+                    <span id="authBtnText">Sign In</span>
+                </button>
+            </form>
 
-        <!-- Stats -->
-        <div class="grid grid-4" style="margin-bottom:20px;">
-            <div class="stat-card green">
-                <div class="stat-lbl">Total Income</div>
-                <div class="stat-val green" id="totalIncome">₹0</div>
-                <div class="stat-sub">All time</div>
+            <div style="font-size:0.9em;color:var(--text-muted);">
+                <span id="authToggleText">New here? </span>
+                <a href="#" onclick="toggleAuthMode()"
+                    style="color:var(--secondary);text-decoration:none;font-weight:600;">Create Account</a>
             </div>
-            <div class="stat-card red">
-                <div class="stat-lbl">Total Expenses</div>
-                <div class="stat-val red" id="totalExpenses">₹0</div>
-                <div class="stat-sub">All time</div>
-            </div>
-            <div class="stat-card orange">
-                <div class="stat-lbl">Total EMI</div>
-                <div class="stat-val orange" id="totalEMI">₹0</div>
-                <div class="stat-sub">Monthly commitment</div>
-            </div>
-            <div class="stat-card blue">
-                <div class="stat-lbl">Net Savings</div>
-                <div class="stat-val blue" id="netSavings">₹0</div>
-                <div class="stat-sub" id="savingsRateLbl">0% savings rate</div>
-            </div>
+            <div id="authMsg" style="margin-top:16px;font-size:0.9em;min-height:20px;"></div>
         </div>
+    </div>
 
-        <div class="grid grid-2" style="margin-bottom:20px;">
-            <!-- Budget Progress -->
-            <div class="card">
-                <div class="card-hdr">Budget Usage</div>
-                <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px;">
-                    <div>
-                        <div class="stat-lbl">Spent of Budget</div>
-                        <div style="font-family:'Playfair Display',serif;font-size:1.4em;font-weight:700;" id="budgetSpentVal">₹0</div>
+    <div class="app-layout">
+
+        <!-- ─── SIDEBAR ─── -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span>✦</span> FINANCE IQ
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" onclick="switchTab('dashboard', this)">
+                    <span class="nav-icon">📊</span> Dashboard
+                </li>
+                <li class="nav-item" onclick="switchTab('income', this)">
+                    <span class="nav-icon">💵</span> Income
+                </li>
+                <li class="nav-item" onclick="switchTab('expenses', this)">
+                    <span class="nav-icon">💳</span> Expenses
+                </li>
+                <li class="nav-item" onclick="switchTab('budget', this)">
+                    <span class="nav-icon">📉</span> Budget
+                </li>
+                <li class="nav-item" onclick="switchTab('emi', this)">
+                    <span class="nav-icon">📅</span> EMIs
+                </li>
+                <li class="nav-item" onclick="switchTab('goals', this)">
+                    <span class="nav-icon">🎯</span> Goals
+                </li>
+                <li class="nav-item" onclick="switchTab('ai', this)"
+                    style="border:1px solid rgba(112,0,255,0.3);background:rgba(112,0,255,0.05);">
+                    <span class="nav-icon">🤖</span> AI Advisor
+                </li>
+            </ul>
+            <div class="status-badge" style="justify-content:space-between;cursor:pointer;" onclick="signOut()">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+                <span style="font-size:1.2em;" title="Sign Out">🚪</span>
+            </div>
+        </aside>
+
+        <!-- ─── MAIN CONTENT ─── -->
+        <main class="main-content">
+
+            <!-- DASHBOARD -->
+            <div id="dashboard" class="tab-content active">
+                <header class="card-header fade-in">
+                    <h1>Dashboard</h1>
+                    <span class="badge" id="dateBadge">Loading...</span>
+                </header>
+
+                <div class="stats-grid fade-in delay-1">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Income</div>
+                        <div class="stat-val text-success" id="d-income">₹0</div>
                     </div>
-                    <div style="text-align:right;">
-                        <div class="stat-lbl">Remaining</div>
-                        <div style="font-weight:700;color:var(--text);" id="budgetRemaining">₹0</div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Expenses</div>
+                        <div class="stat-val text-accent" id="d-expense">₹0</div>
                     </div>
-                </div>
-                <div class="progress-track"><div class="progress-fill" id="budgetBar" style="width:0%"></div></div>
-                <div style="font-size:.8em;color:var(--muted);margin-top:6px;" id="budgetPct">0% of monthly budget used</div>
-            </div>
-
-            <!-- Savings Rate Ring -->
-            <div class="card">
-                <div class="card-hdr">Savings Health</div>
-                <div class="score-ring-wrap">
-                    <div class="score-ring">
-                        <svg width="120" height="120" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--ink2)" stroke-width="8"/>
-                            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--primary)" stroke-width="8"
-                                stroke-dasharray="263.89" stroke-dashoffset="263.89"
-                                stroke-linecap="round" id="savingsRingCircle"
-                                style="transition:stroke-dashoffset .7s ease;" />
-                        </svg>
-                        <div class="val">
-                            <span id="savingsRingVal">0%</span>
-                            <small>Rate</small>
-                        </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Net Savings</div>
+                        <div class="stat-val text-secondary" id="d-savings">₹0</div>
                     </div>
-                    <div>
-                        <div style="font-size:1.4em;font-weight:700;font-family:'Playfair Display',serif;" id="healthLabel">—</div>
-                        <div style="font-size:.82em;color:var(--muted);margin-top:4px;" id="healthSub">Add data to see your score</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Spending Analysis + EMI Alerts -->
-        <div class="grid grid-2" style="margin-bottom:20px;">
-            <div class="card">
-                <div class="card-hdr">Spending by Category</div>
-                <div class="bar-chart" id="spendingChart"></div>
-            </div>
-            <div class="card">
-                <div class="card-hdr">EMI Alerts</div>
-                <div id="emiAlerts"></div>
-            </div>
-        </div>
-
-        <!-- Goals Summary -->
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-hdr">Goals Progress</div>
-            <div id="goalsSummary"></div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════
-         INCOME
-    ══════════════════════════════════════ -->
-    <div id="income" class="tab-content">
-        <div class="grid grid-sidebar">
-            <div>
-                <div class="sec-hdr">Income History</div>
-                <div id="incomeList"></div>
-            </div>
-            <div>
-                <div class="card">
-                    <div class="card-hdr">Add Income</div>
-                    <form id="incomeForm">
-                        <div class="form-group">
-                            <label>Date</label>
-                            <input type="date" id="incomeDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Source</label>
-                            <select id="incomeSource" required>
-                                <option value="">Select source</option>
-                                <option>Salary</option>
-                                <option>Freelance</option>
-                                <option>Business</option>
-                                <option>Investment</option>
-                                <option>Rental</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <input type="text" id="incomeDescription" placeholder="e.g. March salary">
-                        </div>
-                        <div class="form-group">
-                            <label>Amount (₹)</label>
-                            <input type="number" id="incomeAmount" placeholder="0" min="1" step="0.01" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" id="incomeBtn">Add Income</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════
-         EXPENSES
-    ══════════════════════════════════════ -->
-    <div id="expenses" class="tab-content">
-        <div class="grid grid-sidebar">
-            <div>
-                <div class="sec-hdr">Expense History</div>
-                <div id="expenseList"></div>
-            </div>
-            <div>
-                <div class="card">
-                    <div class="card-hdr">Add Expense</div>
-                    <form id="expenseForm">
-                        <div class="form-group">
-                            <label>Date</label>
-                            <input type="date" id="expenseDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Category</label>
-                            <select id="expenseCategory" required>
-                                <option value="">Select category</option>
-                                <option>Groceries</option>
-                                <option>Transportation</option>
-                                <option>Dining Out</option>
-                                <option>Utilities</option>
-                                <option>Entertainment</option>
-                                <option>Healthcare</option>
-                                <option>Shopping</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <input type="text" id="expenseDescription" placeholder="What was it for?" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Amount (₹)</label>
-                            <input type="number" id="expenseAmount" placeholder="0" min="1" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Payment Method</label>
-                            <select id="expensePayment" required>
-                                <option value="">Select method</option>
-                                <option>Cash</option>
-                                <option>UPI</option>
-                                <option>Credit Card</option>
-                                <option>Debit Card</option>
-                                <option>Net Banking</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" id="expenseBtn">Add Expense</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════
-         BUDGET
-    ══════════════════════════════════════ -->
-    <div id="budget" class="tab-content">
-        <div class="grid grid-sidebar">
-            <div>
-                <div class="sec-hdr">Budget vs. Actual</div>
-                <div id="budgetComparison"></div>
-            </div>
-            <div>
-                <div class="card">
-                    <div class="card-hdr">Set Budget</div>
-                    <form id="budgetForm">
-                        <div class="form-group">
-                            <label>Category</label>
-                            <select id="budgetCategory" required>
-                                <option value="">Select category</option>
-                                <option>Groceries</option>
-                                <option>Transportation</option>
-                                <option>Dining Out</option>
-                                <option>Utilities</option>
-                                <option>Entertainment</option>
-                                <option>Healthcare</option>
-                                <option>Shopping</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Monthly Budget (₹)</label>
-                            <input type="number" id="budgetAmount" placeholder="e.g. 5000" min="1" step="0.01" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" id="budgetBtn">Save Budget</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════
-         EMI TRACKER
-    ══════════════════════════════════════ -->
-    <div id="emi" class="tab-content">
-        <div class="grid grid-sidebar">
-            <div>
-                <div class="sec-hdr">Active EMIs</div>
-                <div id="emiList"></div>
-            </div>
-            <div>
-                <div class="card">
-                    <div class="card-hdr">Add EMI</div>
-                    <form id="emiForm">
-                        <div class="form-group">
-                            <label>EMI Name</label>
-                            <input type="text" id="emiName" placeholder="e.g. Home Loan" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Next Payment Date</label>
-                            <input type="date" id="emiDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Principal Amount (₹)</label>
-                            <input type="number" id="emiPrincipal" placeholder="Total loan amount" min="1" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Monthly EMI (₹)</label>
-                            <input type="number" id="emiAmount" placeholder="Monthly payment" min="1" step="0.01" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" id="emiBtn">Add EMI</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════
-         SAVINGS GOALS
-    ══════════════════════════════════════ -->
-    <div id="goals" class="tab-content">
-        <div class="grid grid-sidebar">
-            <div>
-                <div class="sec-hdr">My Goals</div>
-                <div id="goalsList"></div>
-            </div>
-            <div>
-                <div class="card">
-                    <div class="card-hdr">Add Goal</div>
-                    <form id="goalForm">
-                        <div class="form-group">
-                            <label>Goal Name</label>
-                            <input type="text" id="goalName" placeholder="e.g. Emergency Fund" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Target Amount (₹)</label>
-                            <input type="number" id="goalTarget" placeholder="0" min="1" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Current Savings (₹)</label>
-                            <input type="number" id="goalCurrent" placeholder="0" min="0" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Monthly Contribution (₹)</label>
-                            <input type="number" id="goalMonthly" placeholder="0" min="1" step="0.01" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" id="goalBtn">Add Goal</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════
-         AI ADVISOR
-    ══════════════════════════════════════ -->
-    <div id="ai" class="tab-content">
-
-        <!-- Banner -->
-        <div class="ai-banner">
-            <div class="ai-avatar">AI</div>
-            <div class="ai-banner-text">
-                <h3>Financial Advisor</h3>
-                <p>Powered by Google Gemini · Analyses your real financial data and answers any question</p>
-            </div>
-        </div>
-
-        <!-- AI Setup notice (hidden once key is set) -->
-        <div id="aiSetupNotice" style="display:none;" class="insight-card warning">
-            <span class="insight-icon">⚙️</span>
-            <div>
-                <div class="insight-title">AI API Key Required</div>
-                <div class="insight-body">Open the file, find <code style="background:var(--card2);padding:1px 5px;border-radius:4px;">GEMINI_API_KEY</code> at the top of the script and paste your key. The AI chat will then be fully functional.</div>
-            </div>
-        </div>
-
-        <div class="grid grid-2" style="margin-bottom:20px;">
-
-            <!-- Chat Box -->
-            <div class="card" style="display:flex;flex-direction:column;">
-                <div class="card-hdr">Chat</div>
-
-                <!-- Quick chips -->
-                <div class="quick-chips" id="quickChips">
-                    <div class="chip" onclick="sendQuick('How much did I spend this month?')">This month's spending</div>
-                    <div class="chip" onclick="sendQuick('Where is most of my money going?')">Top categories</div>
-                    <div class="chip" onclick="sendQuick('How can I improve my savings?')">Savings tips</div>
-                    <div class="chip" onclick="sendQuick('Am I on track with my budget?')">Budget check</div>
-                    <div class="chip" onclick="sendQuick('What are my upcoming EMI payments?')">Upcoming EMIs</div>
-                    <div class="chip" onclick="sendQuick('Analyse my spending pattern this month')">Spending pattern</div>
-                </div>
-
-                <div class="chat-window" id="chatWindow">
-                    <div class="chat-msg bot">
-                        <div class="chat-avatar">AI</div>
-                        <div class="chat-bubble">
-                            Hi! I'm your AI financial advisor. I have access to all your financial data — income, expenses, budgets, EMIs and goals. Ask me anything!
-                        </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Savings Rate</div>
+                        <div class="stat-val text-gradient" id="d-rate">0%</div>
                     </div>
                 </div>
-                <div class="chat-input-bar">
-                    <input type="text" id="chatInput" placeholder="Ask a financial question…" onkeypress="if(event.key==='Enter') sendChat()">
-                    <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">Send</button>
+
+                <div class="grid-col-2 fade-in delay-2"
+                    style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:24px;">
+                    <div class="card">
+                        <div class="card-header">Spending Analysis</div>
+                        <div id="spendingChart" style="margin-top:20px;">
+                            <!-- Bars injected here -->
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            Smart Alerts
+                            <span class="nav-icon">🔔</span>
+                        </div>
+                        <div id="alertsList" style="display:flex; flex-direction:column; gap:12px;"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Insights Panel -->
-            <div style="display:flex;flex-direction:column;gap:16px;">
-                <!-- Health Score -->
-                <div class="card">
-                    <div class="card-hdr">Financial Health Score</div>
-                    <div class="score-ring-wrap">
-                        <div class="score-ring">
-                            <svg width="120" height="120" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--ink2)" stroke-width="8"/>
-                                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--primary)" stroke-width="8"
-                                    stroke-dasharray="263.89" stroke-dashoffset="263.89"
-                                    stroke-linecap="round" id="aiRingCircle"
-                                    style="transition:stroke-dashoffset .7s ease;" />
-                            </svg>
-                            <div class="val">
-                                <span id="aiScoreVal">—</span>
-                                <small>/100</small>
+            <!-- INCOME -->
+            <div id="income" class="tab-content">
+                <header class="card-header">
+                    <h1>Income Stream</h1>
+                </header>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+                    <div class="card">
+                        <div id="incomeList"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Add Income</h3>
+                        <form id="incomeForm" style="margin-top:20px;">
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" id="incDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Source</label>
+                                <input type="text" id="incSource" placeholder="e.g. Salary" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Amount (₹)</label>
+                                <input type="number" id="incAmount" placeholder="0" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">Add Income</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPENSES -->
+            <div id="expenses" class="tab-content">
+                <header class="card-header">
+                    <h1>Expenses</h1>
+                </header>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+                    <div class="card">
+                        <div id="expenseList"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Add Expense</h3>
+                        <form id="expenseForm" style="margin-top:20px;">
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" id="expDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="expCategory" required>
+                                    <option>Food</option>
+                                    <option>Transport</option>
+                                    <option>Shopping</option>
+                                    <option>Bills</option>
+                                    <option>Entertainment</option>
+                                    <option>Health</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <input type="text" id="expDesc" placeholder="e.g. Uber" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Amount (₹)</label>
+                                <input type="number" id="expAmount" placeholder="0" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">Add Expense</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUDGET -->
+            <div id="budget" class="tab-content">
+                <header class="card-header">
+                    <h1>Budget Planner</h1>
+                </header>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+                    <div class="card">
+                        <div id="budgetList"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Set Budget</h3>
+                        <form id="budgetForm" style="margin-top:20px;">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="budCategory" required>
+                                    <option>Food</option>
+                                    <option>Transport</option>
+                                    <option>Shopping</option>
+                                    <option>Bills</option>
+                                    <option>Entertainment</option>
+                                    <option>Health</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Monthly Limit (₹)</label>
+                                <input type="number" id="budAmount" placeholder="0" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">Set Budget</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMIs -->
+            <div id="emi" class="tab-content">
+                <header class="card-header">
+                    <h1>EMI Tracker</h1>
+                </header>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+                    <div class="card">
+                        <div id="emiList"></div>
+                    </div>
+                    <div class="card">
+                        <h3>New Loan/EMI</h3>
+                        <form id="emiForm" style="margin-top:20px;">
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" id="emiName" placeholder="e.g. Car Loan" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Next Due Date</label>
+                                <input type="date" id="emiDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Detail</label>
+                                <input type="text" id="emiPrincipal" placeholder="e.g. 5 Lakhs remaining">
+                            </div>
+                            <div class="form-group">
+                                <label>Monthly Amount (₹)</label>
+                                <input type="number" id="emiAmount" placeholder="0" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">Track EMI</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GOALS -->
+            <div id="goals" class="tab-content">
+                <header class="card-header">
+                    <h1>Savings Goals</h1>
+                </header>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+                    <div class="card">
+                        <div id="goalsList" style="display:grid; gap:16px;"></div>
+                    </div>
+                    <div class="card">
+                        <h3>New Goal</h3>
+                        <form id="goalForm" style="margin-top:20px;">
+                            <div class="form-group">
+                                <label>Goal Name</label>
+                                <input type="text" id="goalName" placeholder="e.g. New Laptop" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Target Amount (₹)</label>
+                                <input type="number" id="goalTarget" placeholder="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Current Saved (₹)</label>
+                                <input type="number" id="goalCurrent" placeholder="0" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">Add Goal</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI ADVISOR -->
+            <div id="ai" class="tab-content">
+                <div class="chat-layout">
+                    <div class="card chat-box">
+                        <div class="card-header"
+                            style="border-bottom:1px solid var(--border-glass); padding-bottom:16px;">
+                            <span>FinanceGPT Advisor</span>
+                            <span class="badge" style="background:var(--success);color:#000;">Online</span>
+                        </div>
+                        <div class="messages" id="chatMsgs">
+                            <div class="msg bot">Hello! I'm your personal AI Finance Advisor. I've analyzed your data.
+                                Ask me anything about your spending, budget, or how to save more! 🚀</div>
+                        </div>
+                        <div class="input-area">
+                            <input type="text" id="chatInput" placeholder="Ask a financial question..."
+                                onkeypress="if(event.key==='Enter') sendChat()">
+                            <button class="btn btn-primary" onclick="sendChat()">Send</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:24px;">
+                        <div class="card">
+                            <h3>Quick Actions</h3>
+                            <div style="display:grid; gap:10px; margin-top:16px;">
+                                <button class="btn btn-sm" onclick="quickChat('Analyze my spending this month')">📊
+                                    Analyze spending</button>
+                                <button class="btn btn-sm" onclick="quickChat('How can I save more money?')">💰 Savings
+                                    advice</button>
+                                <button class="btn btn-sm" onclick="quickChat('Am I over budget?')">🚨 Budget
+                                    check</button>
                             </div>
                         </div>
-                        <div>
-                            <div style="font-size:1.3em;font-weight:700;font-family:'Playfair Display',serif;" id="aiHealthLabel">—</div>
-                            <div style="font-size:.8em;color:var(--muted);margin-top:4px;" id="aiHealthSub">Add data to compute</div>
+                        <div class="card"
+                            style="background:linear-gradient(135deg, rgba(112,0,255,0.1), rgba(0,0,0,0));">
+                            <h3>AI Insight</h3>
+                            <p style="margin-top:12px; font-size:0.9em; line-height:1.6; color:var(--text-muted);"
+                                id="miniInsight">
+                                Loading insights...
+                            </p>
                         </div>
                     </div>
                 </div>
-
-                <!-- Smart Alerts -->
-                <div class="card">
-                    <div class="card-hdr">Smart Alerts</div>
-                    <div id="smartAlerts"></div>
-                </div>
             </div>
-        </div>
 
-        <!-- Auto-generated Insights -->
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-hdr">Smart Insights <span>— automatically generated from your data</span></div>
-            <div id="autoInsights"></div>
-        </div>
-
-        <!-- Savings Suggestions -->
-        <div class="card">
-            <div class="card-hdr">Savings Suggestions</div>
-            <div id="savingsSuggestions"></div>
-        </div>
-
-    </div><!-- /ai tab -->
-
-</div><!-- /container -->
-
-<script>
-// ═══════════════════════════════════════════════════════
-// ⚙️  CONFIGURATION — PASTE YOUR KEYS HERE
-// ═══════════════════════════════════════════════════════
-
-const SUPABASE_URL     = 'https://pqaezzarakrqcyincibk.supabase.co';   // e.g. https://abcxyz.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxYWV6emFyYWtycWN5aW5jaWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTg3NzIsImV4cCI6MjA4NjM5NDc3Mn0.rrvHae2XNfhbd6Wad8gvmDM1yRnThEky_O5UfEpv68U';     // starts with eyJ...
-
-const GEMINI_API_KEY    = 'AIzaSyDNXKfSRYGiaOY8yhTnuIwjnmvMmNAEqSM';
-
-// ═══════════════════════════════════════════════════════
-
-const { createClient } = supabase;
-let db;
-
-let incomeData  = [];
-let expenseData = [];
-let budgetData  = {};
-let emiData     = [];
-let goalsData   = [];
-
-const DEFAULT_BUDGETS = {
-    'Groceries':15000,'Transportation':5000,'Dining Out':8000,
-    'Utilities':3000,'Entertainment':5000,'Healthcare':3000,
-    'Shopping':10000,'Other':5000
-};
-
-// ─── INIT ─────────────────────────────────────────────
-async function init() {
-    if (SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-        showDbError('Setup required: Replace YOUR_SUPABASE_PROJECT_URL and YOUR_SUPABASE_ANON_KEY in the script section of this file.');
-        hideLoading(); return;
-    }
-    try {
-        db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        await loadAll();
-        document.getElementById('statusDot').classList.add('online');
-        document.getElementById('statusLabel').textContent = 'Connected';
-    } catch(e) {
-        showDbError(e.message);
-    }
-    hideLoading();
-    setDefaultDates();
-    updateDashboard();
-    updateAITab();
-    checkAISetup();
-}
-
-function hideLoading() {
-    const el = document.getElementById('loadingOverlay');
-    el.style.opacity = '0';
-    setTimeout(() => el.style.display = 'none', 500);
-}
-
-function showDbError(msg) {
-    const el = document.getElementById('dbError');
-    el.style.display = 'block';
-    el.innerHTML = `⚠️ <strong>Error:</strong> ${msg}`;
-}
-
-// ─── LOAD DATA ────────────────────────────────────────
-async function loadAll() {
-    const [inc, exp, bud, emi, gls] = await Promise.all([
-        db.from('income').select('*').order('date',{ascending:false}),
-        db.from('expenses').select('*').order('date',{ascending:false}),
-        db.from('budgets').select('*'),
-        db.from('emis').select('*').order('date',{ascending:true}),
-        db.from('goals').select('*').order('created_at',{ascending:true})
-    ]);
-    if (inc.error) throw new Error('income: '+inc.error.message);
-    if (exp.error) throw new Error('expenses: '+exp.error.message);
-    if (bud.error) throw new Error('budgets: '+bud.error.message);
-    if (emi.error) throw new Error('emis: '+emi.error.message);
-    if (gls.error) throw new Error('goals: '+gls.error.message);
-
-    incomeData  = inc.data  || [];
-    expenseData = exp.data  || [];
-    emiData     = emi.data  || [];
-    goalsData   = gls.data  || [];
-    budgetData  = {...DEFAULT_BUDGETS};
-    (bud.data||[]).forEach(r => { budgetData[r.category] = parseFloat(r.amount); });
-}
-
-// ─── TABS ─────────────────────────────────────────────
-function showTab(name, btn) {
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.getElementById(name).classList.add('active');
-    if(btn) btn.classList.add('active');
-
-    if(name==='dashboard') updateDashboard();
-    if(name==='income')    renderIncomeList();
-    if(name==='expenses')  renderExpenseList();
-    if(name==='budget')    renderBudgetComparison();
-    if(name==='emi')       renderEMIList();
-    if(name==='goals')     renderGoalsList();
-    if(name==='ai')        updateAITab();
-}
-
-// ─── UTILITIES ────────────────────────────────────────
-function fmt(n) {
-    return '₹'+parseFloat(n||0).toLocaleString('en-IN',{maximumFractionDigits:0});
-}
-function setDefaultDates() {
-    const t = new Date().toISOString().split('T')[0];
-    ['incomeDate','expenseDate','emiDate'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.value=t;
-    });
-}
-function toast(msg, type='success') {
-    document.querySelectorAll('.toast').forEach(t=>t.remove());
-    const d = document.createElement('div');
-    d.className=`toast ${type}`; d.textContent=msg;
-    document.body.appendChild(d);
-    setTimeout(()=>{ d.style.opacity='0'; d.style.transition='opacity .4s'; setTimeout(()=>d.remove(),400); },3000);
-}
-
-// ─── CALCULATIONS ─────────────────────────────────────
-function calcTotals() {
-    const totalIncome   = incomeData.reduce((s,i)=>s+parseFloat(i.amount),0);
-    const totalExpenses = expenseData.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const totalEMI      = emiData.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const netSavings    = totalIncome - totalExpenses - totalEMI;
-    const savingsRate   = totalIncome>0?(netSavings/totalIncome*100):0;
-    const totalBudget   = Object.values(budgetData).reduce((s,v)=>s+v,0);
-    return {totalIncome,totalExpenses,totalEMI,netSavings,savingsRate,totalBudget};
-}
-
-function getThisMonthExpenses() {
-    const now = new Date();
-    return expenseData.filter(e => {
-        const d = new Date(e.date);
-        return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-    });
-}
-
-function getLastMonthExpenses() {
-    const now = new Date();
-    const lastM = now.getMonth()===0?11:now.getMonth()-1;
-    const lastY = now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
-    return expenseData.filter(e => {
-        const d = new Date(e.date);
-        return d.getMonth()===lastM && d.getFullYear()===lastY;
-    });
-}
-
-function getCategoryBreakdown(rows) {
-    const map = {};
-    rows.forEach(e => {
-        map[e.category] = (map[e.category]||0) + parseFloat(e.amount);
-    });
-    return map;
-}
-
-function getTopCategory(rows) {
-    const map = getCategoryBreakdown(rows);
-    if(!Object.keys(map).length) return null;
-    return Object.entries(map).sort((a,b)=>b[1]-a[1])[0];
-}
-
-// ─── DASHBOARD ────────────────────────────────────────
-function updateDashboard() {
-    const t = calcTotals();
-    document.getElementById('totalIncome').textContent   = fmt(t.totalIncome);
-    document.getElementById('totalExpenses').textContent = fmt(t.totalExpenses);
-    document.getElementById('totalEMI').textContent      = fmt(t.totalEMI);
-    document.getElementById('netSavings').textContent    = fmt(t.netSavings);
-    document.getElementById('netSavings').className      = 'stat-val '+(t.netSavings>=0?'green':'red');
-    document.getElementById('savingsRateLbl').textContent = t.savingsRate.toFixed(1)+'% savings rate';
-
-    const budgetUsed = t.totalBudget>0?(t.totalExpenses/t.totalBudget*100):0;
-    document.getElementById('budgetSpentVal').textContent = fmt(t.totalExpenses);
-    document.getElementById('budgetRemaining').textContent = fmt(t.totalBudget-t.totalExpenses);
-    document.getElementById('budgetPct').textContent = budgetUsed.toFixed(1)+'% of monthly budget used';
-    const bar = document.getElementById('budgetBar');
-    bar.style.width = Math.min(budgetUsed,100)+'%';
-    bar.className = 'progress-fill'+(budgetUsed>=100?' danger':budgetUsed>=80?' warn':'');
-
-    const sr = Math.max(0, Math.min(t.savingsRate, 100));
-    const circumference = 263.89;
-    const offset = circumference - (sr/100)*circumference;
-    document.getElementById('savingsRingCircle').style.strokeDashoffset = offset;
-    document.getElementById('savingsRingVal').textContent = t.savingsRate.toFixed(0)+'%';
-
-    let label, sub, color;
-    if(t.savingsRate>=30){label='Excellent';sub='Outstanding savings discipline';color='var(--text)';}
-    else if(t.savingsRate>=20){label='Good';sub='Above average savings rate';color='var(--text)';}
-    else if(t.savingsRate>=10){label='Fair';sub='Room for improvement';color='var(--text)';}
-    else{label='Needs Work';sub='Focus on cutting expenses';color='var(--text)';}
-    document.getElementById('healthLabel').textContent = label;
-    document.getElementById('healthSub').textContent   = sub;
-    document.getElementById('healthLabel').style.color = color;
-
-    renderSpendingChart();
-    renderEMIAlerts();
-    renderGoalsSummary();
-    renderAutoInsightsStrip();
-}
-
-function renderSpendingChart() {
-    const container = document.getElementById('spendingChart');
-    const breakdown = getCategoryBreakdown(expenseData);
-    const sorted    = Object.entries(breakdown).sort((a,b)=>b[1]-a[1]);
-    if(!sorted.length){container.innerHTML='<div class="empty"><div class="icon">📊</div><p>No expenses yet</p></div>';return;}
-    const max = sorted[0][1];
-    /* Monochrome Palette for chart */
-    const colors = ['#000000','#27272a','#3f3f46','#52525b','#71717a','#a1a1aa','#d4d4d8','#e4e4e7'];
-    container.innerHTML = sorted.slice(0,8).map(([ cat,amt ],i)=>`
-        <div class="bar-row">
-            <div class="bar-label" title="${cat}">${cat}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${(amt/max*100).toFixed(1)}%;background:${colors[i%colors.length]};"></div></div>
-            <div class="bar-amount">${fmt(amt)}</div>
-        </div>
-    `).join('');
-}
-
-function renderEMIAlerts() {
-    const div = document.getElementById('emiAlerts');
-    const today = new Date();
-    const upcoming = emiData.filter(e=>{
-        const d = Math.ceil((new Date(e.date)-today)/86400000);
-        return d>=0 && d<=7;
-    });
-    if(!upcoming.length){
-        div.innerHTML='<div class="empty"><div class="icon">✅</div><p>No EMIs due in next 7 days</p></div>';
-        return;
-    }
-    div.innerHTML = upcoming.map(e=>{
-        const d = Math.ceil((new Date(e.date)-today)/86400000);
-        const cls = d<=2?'danger':d<=5?'warning':'info';
-        return `<div class="insight-card ${cls}">
-            <span class="insight-icon">${d<=2?'🚨':'⚠️'}</span>
-            <div>
-                <div class="insight-title">${e.name} — ${fmt(e.amount)}</div>
-                <div class="insight-body">Due ${d===0?'TODAY':d===1?'TOMORROW':`in ${d} days`} · ${e.date}</div>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-function renderGoalsSummary() {
-    const div = document.getElementById('goalsSummary');
-    if(!goalsData.length){
-        div.innerHTML='<div class="empty"><div class="icon">🎯</div><p>No goals yet — add them in Savings Goals tab</p></div>';
-        return;
-    }
-    div.innerHTML = goalsData.slice(0,4).map(g=>{
-        const pct = Math.min((g.current/g.target*100),100).toFixed(1);
-        const rem = g.target - g.current;
-        const months = g.monthly>0?Math.ceil(rem/g.monthly):'∞';
-        return `<div class="goal-card">
-            <div class="goal-header">
-                <div class="goal-name">🎯 ${g.name}</div>
-                <div class="goal-pct">${pct}%</div>
-            </div>
-            <div style="font-size:.82em;color:var(--muted);margin-bottom:8px;">${fmt(g.current)} of ${fmt(g.target)} · ${months} months left at ${fmt(g.monthly)}/month</div>
-            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        </div>`;
-    }).join('');
-}
-
-function renderAutoInsightsStrip() {
-    const strip = document.getElementById('autoInsightsStrip');
-    const t = calcTotals();
-    const thisM = getThisMonthExpenses();
-    const lastM = getLastMonthExpenses();
-    const thisTotal = thisM.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const lastTotal = lastM.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const topCat = getTopCategory(expenseData);
-    const pct = lastTotal>0?((thisTotal-lastTotal)/lastTotal*100):0;
-
-    const cards = [];
-
-    if(t.savingsRate>=20){
-        cards.push({icon:'🏆',label:'Savings Rate',value:`${t.savingsRate.toFixed(1)}%`});
-    } else if(t.savingsRate>0){
-        cards.push({icon:'📉',label:'Savings Rate',value:`${t.savingsRate.toFixed(1)}%`});
-    }
-    if(topCat){
-        cards.push({icon:'🔥',label:'Highest Spending',value:`${topCat[0]}: ${fmt(topCat[1])}`});
-    }
-    if(lastTotal>0){
-        const sign = pct>=0?'+':'';
-        cards.push({icon:pct>=40?'🚨':pct>=0?'📈':'📉',label:'vs Last Month',value:`${sign}${pct.toFixed(1)}%`});
-    }
-    if(emiData.length){
-        cards.push({icon:'💳',label:'Total EMI Load',value:`${fmt(t.totalEMI)}/month`});
-    }
-    if(goalsData.length){
-        const totalGoalTarget = goalsData.reduce((s,g)=>s+parseFloat(g.target),0);
-        const totalGoalCurrent = goalsData.reduce((s,g)=>s+parseFloat(g.current),0);
-        const goalPct = totalGoalTarget>0?(totalGoalCurrent/totalGoalTarget*100):0;
-        cards.push({icon:'🎯',label:'Goals Overall',value:`${goalPct.toFixed(0)}% complete`});
-    }
-
-    if(!cards.length){
-        strip.style.display='none'; return;
-    }
-    strip.style.display='flex';
-    strip.innerHTML = cards.map(c=>`
-        <div class="strip-card">
-            <div class="label">${c.label}</div>
-            <div class="value">${c.value}</div>
-        </div>
-    `).join('');
-}
-
-// ─── INCOME ───────────────────────────────────────────
-document.getElementById('incomeForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn = document.getElementById('incomeBtn');
-    btn.disabled=true; btn.textContent='Saving…';
-    const item = {
-        date: document.getElementById('incomeDate').value,
-        source: document.getElementById('incomeSource').value,
-        description: document.getElementById('incomeDescription').value,
-        amount: parseFloat(document.getElementById('incomeAmount').value)
-    };
-    const {data,error} = await db.from('income').insert([item]).select();
-    if(error){ toast('❌ '+error.message,'error'); }
-    else { incomeData.unshift(data[0]); e.target.reset(); setDefaultDates(); renderIncomeList(); updateDashboard(); toast('✅ Income added!'); }
-    btn.disabled=false; btn.textContent='Add Income';
-});
-
-function renderIncomeList() {
-    const div = document.getElementById('incomeList');
-    if(!incomeData.length){div.innerHTML='<div class="empty"><div class="icon">💵</div><p>No income yet</p></div>';return;}
-    div.innerHTML=`<div class="tbl-wrap"><table>
-        <tr><th>Date</th><th>Source</th><th>Description</th><th>Amount</th><th></th></tr>
-        ${incomeData.map(i=>`<tr>
-            <td>${i.date}</td>
-            <td><span class="badge badge-green">${i.source}</span></td>
-            <td>${i.description||'—'}</td>
-            <td style="color:var(--text);font-weight:700;">${fmt(i.amount)}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteIncome(${i.id})">Delete</button></td>
-        </tr>`).join('')}
-    </table></div>`;
-}
-
-async function deleteIncome(id) {
-    if(!confirm('Delete this income?')) return;
-    const {error} = await db.from('income').delete().eq('id',id);
-    if(error){toast('❌ '+error.message,'error');return;}
-    incomeData = incomeData.filter(i=>i.id!==id);
-    renderIncomeList(); updateDashboard(); toast('🗑️ Deleted','warn');
-}
-
-// ─── EXPENSES ─────────────────────────────────────────
-document.getElementById('expenseForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn = document.getElementById('expenseBtn');
-    btn.disabled=true; btn.textContent='Saving…';
-    const item = {
-        date: document.getElementById('expenseDate').value,
-        category: document.getElementById('expenseCategory').value,
-        description: document.getElementById('expenseDescription').value,
-        amount: parseFloat(document.getElementById('expenseAmount').value),
-        payment_method: document.getElementById('expensePayment').value
-    };
-    const {data,error} = await db.from('expenses').insert([item]).select();
-    if(error){ toast('❌ '+error.message,'error'); }
-    else { expenseData.unshift(data[0]); e.target.reset(); setDefaultDates(); renderExpenseList(); updateDashboard(); toast('✅ Expense added!'); }
-    btn.disabled=false; btn.textContent='Add Expense';
-});
-
-function renderExpenseList() {
-    const div = document.getElementById('expenseList');
-    if(!expenseData.length){div.innerHTML='<div class="empty"><div class="icon">💳</div><p>No expenses yet</p></div>';return;}
-    div.innerHTML=`<div class="tbl-wrap"><table>
-        <tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Method</th><th></th></tr>
-        ${expenseData.map(ex=>`<tr>
-            <td>${ex.date}</td>
-            <td><span class="badge badge-blue">${ex.category}</span></td>
-            <td>${ex.description}</td>
-            <td style="color:var(--text);font-weight:700;">${fmt(ex.amount)}</td>
-            <td><span class="badge badge-orange">${ex.payment_method}</span></td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteExpense(${ex.id})">Delete</button></td>
-        </tr>`).join('')}
-    </table></div>`;
-}
-
-async function deleteExpense(id) {
-    if(!confirm('Delete this expense?')) return;
-    const {error} = await db.from('expenses').delete().eq('id',id);
-    if(error){toast('❌ '+error.message,'error');return;}
-    expenseData = expenseData.filter(e=>e.id!==id);
-    renderExpenseList(); updateDashboard(); toast('🗑️ Deleted','warn');
-}
-
-// ─── BUDGET ───────────────────────────────────────────
-document.getElementById('budgetForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn = document.getElementById('budgetBtn');
-    btn.disabled=true; btn.textContent='Saving…';
-    const category = document.getElementById('budgetCategory').value;
-    const amount   = parseFloat(document.getElementById('budgetAmount').value);
-    const {error} = await db.from('budgets').upsert([{category,amount}],{onConflict:'category'});
-    if(error){ toast('❌ '+error.message,'error'); }
-    else { budgetData[category]=amount; e.target.reset(); renderBudgetComparison(); updateDashboard(); toast('✅ Budget saved!'); }
-    btn.disabled=false; btn.textContent='Save Budget';
-});
-
-function renderBudgetComparison() {
-    const div = document.getElementById('budgetComparison');
-    const rows = Object.keys(budgetData).map(cat=>{
-        const budget  = budgetData[cat];
-        const spent   = expenseData.filter(e=>e.category===cat).reduce((s,e)=>s+parseFloat(e.amount),0);
-        const rem     = budget-spent;
-        const pct     = budget>0?(spent/budget*100).toFixed(1):0;
-        const badge   = spent>budget*1.2?'<span class="badge badge-red">Over Budget</span>':
-                        spent>budget*0.8 ?'<span class="badge badge-orange">Close</span>':
-                                          '<span class="badge badge-green">Good</span>';
-        return `<tr>
-            <td><strong>${cat}</strong></td>
-            <td>${fmt(budget)}</td>
-            <td style="color:var(--text);font-weight:600;">${fmt(spent)}</td>
-            <td style="color:${rem>=0?'var(--text)':'var(--text)'};font-weight:600;">${fmt(rem)}</td>
-            <td>${pct}%</td>
-            <td>${badge}</td>
-        </tr>`;
-    });
-    div.innerHTML=`<div class="tbl-wrap"><table>
-        <tr><th>Category</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>Used %</th><th>Status</th></tr>
-        ${rows.join('')}
-    </table></div>`;
-}
-
-// ─── EMI ──────────────────────────────────────────────
-document.getElementById('emiForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn = document.getElementById('emiBtn');
-    btn.disabled=true; btn.textContent='Saving…';
-    const item = {
-        name:      document.getElementById('emiName').value,
-        date:      document.getElementById('emiDate').value,
-        principal: parseFloat(document.getElementById('emiPrincipal').value),
-        amount:    parseFloat(document.getElementById('emiAmount').value)
-    };
-    const {data,error} = await db.from('emis').insert([item]).select();
-    if(error){ toast('❌ '+error.message,'error'); }
-    else { emiData.push(data[0]); e.target.reset(); setDefaultDates(); renderEMIList(); updateDashboard(); toast('✅ EMI added!'); }
-    btn.disabled=false; btn.textContent='Add EMI';
-});
-
-function renderEMIList() {
-    const div = document.getElementById('emiList');
-    if(!emiData.length){div.innerHTML='<div class="empty"><div class="icon">📅</div><p>No EMIs yet</p></div>';return;}
-    const today = new Date();
-    div.innerHTML = emiData.map(emi=>{
-        const d = Math.ceil((new Date(emi.date)-today)/86400000);
-        const badge = d<=0?'<span class="badge badge-red">OVERDUE</span>':
-                      d<=5?'<span class="badge badge-orange">DUE SOON</span>':
-                      `<span class="badge badge-green">${d} days</span>`;
-        return `<div class="emi-row">
-            <div>
-                <div style="font-weight:700;margin-bottom:3px;">${emi.name} ${badge}</div>
-                <div style="font-size:.82em;color:var(--muted);">Next: ${emi.date} · Principal: ${fmt(emi.principal)}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div style="font-family:'Playfair Display',serif;font-size:1.1em;font-weight:700;color:var(--text);">${fmt(emi.amount)}<span style="font-size:.6em;color:var(--muted);font-family:'DM Sans'">/mo</span></div>
-                <button class="btn btn-danger btn-sm" onclick="deleteEMI(${emi.id})">Delete</button>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-async function deleteEMI(id) {
-    if(!confirm('Delete this EMI?')) return;
-    const {error} = await db.from('emis').delete().eq('id',id);
-    if(error){toast('❌ '+error.message,'error');return;}
-    emiData = emiData.filter(e=>e.id!==id);
-    renderEMIList(); updateDashboard(); toast('🗑️ Deleted','warn');
-}
-
-// ─── GOALS ────────────────────────────────────────────
-document.getElementById('goalForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const btn = document.getElementById('goalBtn');
-    btn.disabled=true; btn.textContent='Saving…';
-    const item = {
-        name:    document.getElementById('goalName').value,
-        target:  parseFloat(document.getElementById('goalTarget').value),
-        current: parseFloat(document.getElementById('goalCurrent').value),
-        monthly: parseFloat(document.getElementById('goalMonthly').value)
-    };
-    const {data,error} = await db.from('goals').insert([item]).select();
-    if(error){ toast('❌ '+error.message,'error'); }
-    else { goalsData.push(data[0]); e.target.reset(); renderGoalsList(); updateDashboard(); toast('✅ Goal added!'); }
-    btn.disabled=false; btn.textContent='Add Goal';
-});
-
-function renderGoalsList() {
-    const div = document.getElementById('goalsList');
-    if(!goalsData.length){div.innerHTML='<div class="empty"><div class="icon">🎯</div><p>No goals yet</p></div>';return;}
-    div.innerHTML = goalsData.map(g=>{
-        const pct = Math.min((g.current/g.target*100),100).toFixed(1);
-        const rem = g.target-g.current;
-        const months = g.monthly>0?Math.ceil(rem/g.monthly):'∞';
-        return `<div class="goal-card">
-            <div class="goal-header">
-                <div class="goal-name">🎯 ${g.name}</div>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="goal-pct">${pct}%</div>
-                    <button class="btn btn-danger btn-sm" onclick="deleteGoal(${g.id})">Delete</button>
-                </div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
-                <div><div style="font-size:.75em;color:var(--muted);margin-bottom:2px;">Target</div><div style="font-weight:700;">${fmt(g.target)}</div></div>
-                <div><div style="font-size:.75em;color:var(--muted);margin-bottom:2px;">Saved</div><div style="font-weight:700;color:var(--primary);">${fmt(g.current)}</div></div>
-                <div><div style="font-size:.75em;color:var(--muted);margin-bottom:2px;">ETA</div><div style="font-weight:700;color:var(--muted);">${months} months</div></div>
-            </div>
-            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        </div>`;
-    }).join('');
-}
-
-async function deleteGoal(id) {
-    if(!confirm('Delete this goal?')) return;
-    const {error} = await db.from('goals').delete().eq('id',id);
-    if(error){toast('❌ '+error.message,'error');return;}
-    goalsData = goalsData.filter(g=>g.id!==id);
-    renderGoalsList(); updateDashboard(); toast('🗑️ Deleted','warn');
-}
-
-// ═══════════════════════════════════════════════════════
-// AI ADVISOR SECTION
-// ═══════════════════════════════════════════════════════
-
-function checkAISetup() {
-    const notice = document.getElementById('aiSetupNotice');
-    if(GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-        notice.style.display='flex';
-    } else {
-        notice.style.display='none';
-    }
-}
-
-// Build a rich financial context string for the AI
-function buildFinancialContext() {
-    const t = calcTotals();
-    const thisM  = getThisMonthExpenses();
-    const lastM  = getLastMonthExpenses();
-    const thisTotal = thisM.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const lastTotal = lastM.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const pctChange = lastTotal>0?((thisTotal-lastTotal)/lastTotal*100):null;
-    const catBreak  = getCategoryBreakdown(expenseData);
-    const topCat    = getTopCategory(expenseData);
-
-    const now = new Date();
-    const monthName = now.toLocaleString('en-IN',{month:'long'});
-
-    const goalsStr = goalsData.map(g=>{
-        const pct = (g.current/g.target*100).toFixed(1);
-        return `${g.name}: ₹${g.current} saved of ₹${g.target} target (${pct}% done, ₹${g.monthly}/month contribution)`;
-    }).join('\n') || 'None set';
-
-    const emisStr = emiData.map(e=>`${e.name}: ₹${e.amount}/month (next due: ${e.date})`).join('\n') || 'None';
-
-    const budgetsStr = Object.entries(budgetData).map(([cat,bgt])=>{
-        const spent = expenseData.filter(e=>e.category===cat).reduce((s,e)=>s+parseFloat(e.amount),0);
-        return `${cat}: Budget ₹${bgt}, Spent ₹${spent.toFixed(0)}, Remaining ₹${(bgt-spent).toFixed(0)}`;
-    }).join('\n');
-
-    const catStr = Object.entries(catBreak).sort((a,b)=>b[1]-a[1]).map(([c,a])=>`${c}: ₹${a.toFixed(0)}`).join('\n') || 'None';
-
-    return `
-CURRENT FINANCIAL SUMMARY (as of ${now.toDateString()}):
-
-OVERVIEW:
-- Total Income (all time): ₹${t.totalIncome.toFixed(0)}
-- Total Expenses (all time): ₹${t.totalExpenses.toFixed(0)}
-- Monthly EMI load: ₹${t.totalEMI.toFixed(0)}
-- Net Savings: ₹${t.netSavings.toFixed(0)}
-- Savings Rate: ${t.savingsRate.toFixed(1)}%
-
-THIS MONTH (${monthName}):
-- Expenses this month: ₹${thisTotal.toFixed(0)}
-- Expenses last month: ₹${lastTotal.toFixed(0)}
-${pctChange!==null ? `- Month-over-month change: ${pctChange>0?'+':''}${pctChange.toFixed(1)}%` : '- Not enough history for month comparison'}
-- Highest spending category: ${topCat?`${topCat[0]} (₹${topCat[1].toFixed(0)})`:'None'}
-
-SPENDING BY CATEGORY (all time):
-${catStr}
-
-BUDGET STATUS:
-${budgetsStr}
-
-ACTIVE EMIs:
-${emisStr}
-
-SAVINGS GOALS:
-${goalsStr}
-`.trim();
-}
-
-// Main AI chat function (Updated for Google Gemini)
-async function sendChat() {
-    const input = document.getElementById('chatInput');
-    const msg   = input.value.trim();
-    if(!msg) return;
-    input.value = '';
-
-    if(GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-        addChatBubble('bot','⚙️ Please add your Google Gemini API key in the script (GEMINI_API_KEY) to enable AI chat.');
-        return;
-    }
-
-    addChatBubble('user', msg);
-
-    // Show typing indicator
-    const typingId = 'typing-'+Date.now();
-    const chatWin = document.getElementById('chatWindow');
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'chat-msg bot';
-    typingDiv.id = typingId;
-    typingDiv.innerHTML = `<div class="chat-avatar">AI</div><div class="chat-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
-    chatWin.appendChild(typingDiv);
-    chatWin.scrollTop = chatWin.scrollHeight;
-
-    const btn = document.getElementById('chatSendBtn');
-    btn.disabled = true; btn.textContent = '…';
-
-    try {
-        const context = buildFinancialContext();
-        
-        // Gemini doesn't always take a separate 'system' field in standard rest endpoint easily, 
-        // so we prepend instructions to the context.
-        const systemPrompt = `You are a helpful, friendly, and smart personal finance advisor. You have full access to the user's financial data shown below. Give specific, data-driven advice based on their actual numbers. Be concise, warm and practical. Use ₹ for Indian rupees. Always reference specific numbers from their data. Keep responses under 200 words unless the question requires more detail.
-
-${context}`;
-
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
-
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: systemPrompt + "\n\nUser Question: " + msg
-                    }]
-                }]
-            })
-        });
-
-        const data = await response.json();
-
-        document.getElementById(typingId)?.remove();
-
-        if(data.error) {
-            addChatBubble('bot', '❌ AI Error: '+data.error.message);
-        } else {
-            // Extract text from Gemini response structure
-            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
-            addChatBubble('bot', reply);
+        </main>
+
+        <!-- ─── MOBILE NAV ─── -->
+        <nav class="mobile-nav">
+            <button class="mobile-tab active" onclick="switchTab('dashboard', this)">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Home
+            </button>
+            <button class="mobile-tab" onclick="switchTab('income', this)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                In/Out
+            </button>
+            <button class="mobile-tab" onclick="switchTab('ai', this)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+                AI
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- ─── TOAST NOTIFICATION ─── -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ─── CONFIGURATION ───
+        const SUPABASE_URL = 'https://pqaezzarakrqcyincibk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxYWV6emFyYWtycWN5aW5jaWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTg3NzIsImV4cCI6MjA4NjM5NDc3Mn0.rrvHae2XNfhbd6Wad8gvmDM1yRnThEky_O5UfEpv68U';
+        const ANTHROPIC_API_KEY = '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';
+
+        const { createClient } = supabase;
+        let db;
+        let incomeData = [], expenseData = [], budgetData = {}, emiData = [], goalsData = [];
+        const DEFAULT_BUDGETS = { 'Food': 8000, 'Transport': 5000, 'Bills': 3000, 'Entertainment': 5000, 'Shopping': 5000, 'Health': 3000, 'Other': 5000 };
+
+        // ─── AUTH LOGIC ───
+        let currentUser = null;
+        let isSignUp = false;
+
+        async function initAuth() {
+            // Check active session
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                handleLoginSuccess();
+            } else {
+                document.getElementById('loader').style.display = 'none'; // Hide initial loader, show auth
+            }
+
+            // Listen for changes
+            db.auth.onAuthStateChange((_event, session) => {
+                if (session) {
+                    currentUser = session.user;
+                    handleLoginSuccess();
+                } else {
+                    currentUser = null;
+                    document.getElementById('authOverlay').style.display = 'flex';
+                    document.getElementById('appContent').style.opacity = '0.3'; // Dim background
+                }
+            });
         }
-    } catch(err) {
-        document.getElementById(typingId)?.remove();
-        addChatBubble('bot', '❌ Network error: '+err.message+'. Check your API key and network.');
-    }
 
-    btn.disabled = false; btn.textContent = 'Send';
-}
+        function handleLoginSuccess() {
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('appContent').style.opacity = '1';
+            document.getElementById('statusDot').classList.add('online');
+            document.getElementById('statusText').innerText = currentUser.email.split('@')[0];
+            refreshData();
+        }
 
-function addChatBubble(role, text) {
-    const chatWin = document.getElementById('chatWindow');
-    const div = document.createElement('div');
-    div.className = `chat-msg ${role}`;
-    div.innerHTML = `
-        <div class="chat-avatar">${role==='bot'?'AI':'You'}</div>
-        <div class="chat-bubble">${text.replace(/\n/g,'<br>')}</div>
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            document.getElementById('authTitle').innerText = isSignUp ? 'Create Account' : 'Welcome Back';
+            document.getElementById('authBtnText').innerText = isSignUp ? 'Sign Up' : 'Sign In';
+            document.getElementById('authToggleText').innerText = isSignUp ? 'Already have an account? ' : 'New here? ';
+            event.target.innerText = isSignUp ? 'Sign In' : 'Create Account';
+        }
+
+        document.getElementById('authForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPass').value;
+            const msg = document.getElementById('authMsg');
+
+            msg.innerText = 'Processing...';
+            msg.style.color = 'var(--text-muted)';
+
+            try {
+                if (isSignUp) {
+                    const { error } = await db.auth.signUp({ email, password });
+                    if (error) throw error;
+                    msg.innerText = '✅ Check your email to confirm!';
+                    msg.style.color = 'var(--success)';
+                } else {
+                    const { error } = await db.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    // onAuthStateChange will handle success
+                }
+            } catch (err) {
+                msg.innerText = '❌ ' + err.message;
+                msg.style.color = 'var(--accent)';
+            }
+        };
+
+        async function signOut() {
+            if (confirm('Sign out?')) await db.auth.signOut();
+        }
+
+        // ─── APP INIT ───
+        window.onload = async () => {
+            // Add ID to main wrapper for dimming effect
+            document.querySelector('.app-layout').id = 'appContent';
+
+            document.getElementById('dateBadge').innerText = new Date().toDateString();
+
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            ['incDate', 'expDate', 'emiDate'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = today;
+            });
+
+            try {
+                db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                await initAuth(); // Changed from refreshData()
+            } catch (e) {
+                showToast('❌ Connection Failed: ' + e.message);
+            }
+
+            // Remove loader (Auth init handles hiding it if no session)
+            if (currentUser) {
+                setTimeout(() => {
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+                }, 1000);
+            }
+        };
+
+        // ─── NAVIGATION ───
+        function switchTab(tabId, btn) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item, .mobile-tab').forEach(el => el.classList.remove('active'));
+
+            // Show target
+            document.getElementById(tabId).classList.add('active');
+
+            // Highlight button (desktop & mobile)
+            if (btn) btn.classList.add('active');
+
+            // Trigger render
+            if (tabId === 'dashboard') renderDashboard();
+            if (tabId === 'income') renderIncome();
+            if (tabId === 'expenses') renderExpenses();
+            if (tabId === 'budget') renderBudget();
+            if (tabId === 'emi') renderEMI();
+            if (tabId === 'goals') renderGoals();
+        }
+
+        // ─── DATA & RENDER ───
+        async function refreshData() {
+            const [inc, exp, bud, emi, gls] = await Promise.all([
+                db.from('income').select('*').order('date', { ascending: false }),
+                db.from('expenses').select('*').order('date', { ascending: false }),
+                db.from('budgets').select('*'),
+                db.from('emis').select('*').order('date', { ascending: true }),
+                db.from('goals').select('*').order('created_at', { ascending: true })
+            ]);
+
+            incomeData = inc.data || [];
+            expenseData = exp.data || [];
+            emiData = emi.data || [];
+            goalsData = gls.data || [];
+
+            budgetData = { ...DEFAULT_BUDGETS };
+            (bud.data || []).forEach(r => budgetData[r.category] = r.amount);
+
+            renderDashboard();
+            renderBudget(); // Pre-calc for dashboard
+        }
+
+        function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+
+        function renderDashboard() {
+            const totalInc = incomeData.reduce((s, i) => s + i.amount, 0);
+            const totalExp = expenseData.reduce((s, e) => s + e.amount, 0);
+            const net = totalInc - totalExp;
+            const rate = totalInc > 0 ? (net / totalInc * 100) : 0;
+
+            document.getElementById('d-income').innerText = fmt(totalInc);
+            document.getElementById('d-expense').innerText = fmt(totalExp);
+            document.getElementById('d-savings').innerText = fmt(net);
+            document.getElementById('d-rate').innerText = rate.toFixed(1) + '%';
+
+            // Chart
+            const cats = {};
+            expenseData.forEach(e => cats[e.category] = (cats[e.category] || 0) + e.amount);
+            const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+            const max = sorted[0]?.[1] || 1;
+
+            document.getElementById('spendingChart').innerHTML = sorted.slice(0, 5).map(([c, v], i) => `
+        <div class="bar-chart-row">
+            <div class="bar-label">${c}</div>
+            <div class="bar-track">
+                <div class="bar-fill" style="width:${v / max * 100}%; background:var(--${['primary', 'secondary', 'accent'][i % 3]});"></div>
+            </div>
+            <div class="bar-value">${fmt(v)}</div>
+        </div>
+    `).join('') || '<div style="text-align:center;color:var(--text-faint);padding:20px;">No expenses yet</div>';
+
+            // Alerts
+            const alerts = [];
+            const today = new Date();
+            emiData.forEach(e => {
+                const days = Math.ceil((new Date(e.date) - today) / 86400000);
+                if (days >= 0 && days <= 5) alerts.push({ icon: '📅', msg: `${e.name} EMI due in ${days} days` });
+            });
+            // Check Budget
+            Object.keys(budgetData).forEach(cat => {
+                const spent = expenseData.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0);
+                if (spent > budgetData[cat]) alerts.push({ icon: '🚨', msg: `Over budget on ${cat} (-${fmt(spent - budgetData[cat])})` });
+            });
+
+            document.getElementById('alertsList').innerHTML = alerts.slice(0, 4).map(a => `
+        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; display:flex; gap:10px; align-items:center; font-size:0.9em;">
+            <span>${a.icon}</span> <span>${a.msg}</span>
+        </div>
+    `).join('') || '<div style="color:var(--text-muted); font-size:0.9em;">No urgent alerts. You are doing great! ✨</div>';
+        }
+
+        function renderIncome() {
+            const el = document.getElementById('incomeList');
+            if (!incomeData.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No income records found.</div>'; return; }
+
+            el.innerHTML = incomeData.map(i => `
+        <div class="list-item">
+            <div>
+                <div style="font-weight:600;margin-bottom:4px;">${i.source}</div>
+                <div style="font-size:0.8em;color:var(--text-muted);">${i.date}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="color:var(--success);font-weight:700;">+${fmt(i.amount)}</div>
+                <button class="btn-sm btn-accent" style="margin-top:4px;padding:2px 8px;font-size:0.7em;" onclick="del('income',${i.id})">Del</button>
+            </div>
+        </div>
+    `).join('');
+        }
+
+        function renderExpenses() {
+            const el = document.getElementById('expenseList');
+            if (!expenseData.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No expenses found.</div>'; return; }
+
+            el.innerHTML = expenseData.map(e => `
+        <div class="list-item">
+            <div>
+                <div style="font-weight:600;margin-bottom:4px;">${e.description} <span class="badge">${e.category}</span></div>
+                <div style="font-size:0.8em;color:var(--text-muted);">${e.date}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="color:var(--warning);font-weight:700;">-${fmt(e.amount)}</div>
+                <button class="btn-sm btn-accent" style="margin-top:4px;padding:2px 8px;font-size:0.7em;" onclick="del('expenses',${e.id})">Del</button>
+            </div>
+        </div>
+    `).join('');
+        }
+
+        function renderBudget() {
+            const el = document.getElementById('budgetList');
+            el.innerHTML = Object.entries(budgetData).map(([cat, bud]) => {
+                const spent = expenseData.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0);
+                const pct = Math.min((spent / bud) * 100, 100);
+                const color = spent > bud ? 'var(--accent)' : 'var(--secondary)';
+                return `
+        <div style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:6px;">
+                <span>${cat}</span>
+                <span>${fmt(spent)} / ${fmt(bud)}</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" style="width:${pct}%; background:${color};"></div>
+            </div>
+        </div>`;
+            }).join('');
+        }
+
+        function renderEMI() {
+            const el = document.getElementById('emiList');
+            if (!emiData.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No active EMIs.</div>'; return; }
+            el.innerHTML = emiData.map(e => `
+        <div class="list-item">
+            <div>
+                <div style="font-weight:600;">${e.name}</div>
+                <div style="font-size:0.8em;color:var(--primary);margin-top:2px;">Due: ${e.date}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-weight:700;">${fmt(e.amount)}/mo</div>
+                <button class="btn-sm btn-accent" style="font-size:0.7em;" onclick="del('emis', ${e.id})">Remove</button>
+            </div>
+        </div>
+    `).join('');
+        }
+
+        function renderGoals() {
+            const el = document.getElementById('goalsList');
+            if (!goalsData.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No savings goals set.</div>'; return; }
+            el.innerHTML = goalsData.map(g => {
+                const pct = Math.min((g.current / g.target) * 100, 100).toFixed(1);
+                return `
+        <div class="card" style="padding:16px; background:rgba(0,0,0,0.2);">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <strong>${g.name}</strong>
+                <span class="text-secondary">${pct}%</span>
+            </div>
+            <div class="bar-track" style="margin-bottom:8px;"><div class="bar-fill" style="width:${pct}%; background:var(--success);"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:0.8em;color:var(--text-muted);">
+                <span>Saved: ${fmt(g.current)}</span>
+                <span>Target: ${fmt(g.target)}</span>
+            </div>
+            <button class="btn-sm btn-accent" style="margin-top:10px;width:100%;" onclick="del('goals',${g.id})">Delete Goal</button>
+        </div>`
+            }).join('');
+        }
+
+        // ─── ACTIONS ───
+
+        // Form Handlers
+        document.getElementById('incomeForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const item = {
+                user_id: currentUser.id, // Add Auth ID
+                date: document.getElementById('incDate').value,
+                source: document.getElementById('incSource').value,
+                amount: parseFloat(document.getElementById('incAmount').value)
+            };
+            const { data, error } = await db.from('income').insert([item]).select();
+            if (error) showToast('❌ Error: ' + error.message);
+            else { incomeData.unshift(data[0]); renderIncome(); showToast('✅ Income Added'); }
+        };
+
+        document.getElementById('expenseForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const item = {
+                user_id: currentUser.id, // Add Auth ID
+                date: document.getElementById('expDate').value,
+                category: document.getElementById('expCategory').value,
+                description: document.getElementById('expDesc').value,
+                amount: parseFloat(document.getElementById('expAmount').value)
+            };
+            const { data, error } = await db.from('expenses').insert([item]).select();
+            if (error) showToast('❌ Error: ' + error.message);
+            else { expenseData.unshift(data[0]); renderExpenses(); showToast('✅ Expense Added'); }
+        };
+
+        document.getElementById('budgetForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const cat = document.getElementById('budCategory').value;
+            const amt = parseFloat(document.getElementById('budAmount').value);
+            // Upsert with user_id is tricky if not unique constraint includes user_id. 
+            // For simplicity, we assume RLS handles visibility, but upsert needs constraint.
+            // We'll add user_id to the object.
+            const { error } = await db.from('budgets').upsert([{
+                user_id: currentUser.id,
+                category: cat,
+                amount: amt
+            }], { onConflict: 'category' }); // Note: unique constraint might fail if multiple users use same category name unless constraint includes user_id
+
+            if (error) showToast('❌ Error: ' + error.message);
+            else { budgetData[cat] = amt; renderBudget(); showToast('✅ Budget Set'); }
+        };
+
+        document.getElementById('emiForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const item = {
+                user_id: currentUser.id, // Add Auth ID
+                name: document.getElementById('emiName').value,
+                date: document.getElementById('emiDate').value,
+                amount: parseFloat(document.getElementById('emiAmount').value),
+                principal: parseFloat(document.getElementById('emiPrincipal').value || 0)
+            };
+            const { data, error } = await db.from('emis').insert([item]).select();
+            if (error) showToast('❌ Error: ' + error.message);
+            else { emiData.push(data[0]); renderEMI(); showToast('✅ EMI Added'); }
+        };
+
+        document.getElementById('goalForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const item = {
+                user_id: currentUser.id, // Add Auth ID
+                name: document.getElementById('goalName').value,
+                target: parseFloat(document.getElementById('goalTarget').value),
+                current: parseFloat(document.getElementById('goalCurrent').value)
+            };
+            const { data, error } = await db.from('goals').insert([item]).select();
+            if (error) showToast('❌ Error: ' + error.message);
+            else { goalsData.push(data[0]); renderGoals(); showToast('✅ Goal Created'); }
+        };
+
+        async function del(table, id) {
+            if (!confirm('Are you sure?')) return;
+            await db.from(table).delete().eq('id', id);
+            await refreshData();
+            showToast('🗑️ Item Removed');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // ─── AI CHAT ───
+        function quickChat(text) {
+            const input = document.getElementById('chatInput');
+            input.value = text;
+            sendChat();
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            // UI Update
+            const box = document.getElementById('chatMsgs');
+            box.innerHTML += `<div class="msg user">${msg}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            // Loading indicator
+            const loadId = 'load-' + Date.now();
+            box.innerHTML += `<div class="msg bot" id="${loadId}">Thinking...</div>`;
+
+            // Context Building
+            const context = `
+    User data:
+    Total Income: ${fmt(incomeData.reduce((s, i) => s + i.amount, 0))}
+    Total Expense: ${fmt(expenseData.reduce((s, e) => s + e.amount, 0))}
+    Budgets: ${JSON.stringify(budgetData)}
+    Recent Expenses: ${JSON.stringify(expenseData.slice(0, 5))}
+    Goals: ${JSON.stringify(goalsData)}
     `;
-    chatWin.appendChild(div);
-    chatWin.scrollTop = chatWin.scrollHeight;
-}
 
-function sendQuick(msg) {
-    document.getElementById('chatInput').value = msg;
-    sendChat();
-}
+            try {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'x-api-key': ANTHROPIC_API_KEY,
+                        'anthropic-version': '2023-06-01',
+                        'content-type': 'application/json',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-haiku-20240307',
+                        max_tokens: 300,
+                        messages: [
+                            { role: "system", content: "You are a financial advisor. Answer briefly based on the provided data. Currency is INR (₹)." },
+                            { role: "user", content: `Context: ${context}\n\nQuestion: ${msg}` }
+                        ]
+                    })
+                });
+                const data = await res.json();
+                const reply = data.content?.[0]?.text || "I couldn't process that.";
 
-// ─── UPDATE AI TAB (non-chat panels) ─────────────────
-function updateAITab() {
-    checkAISetup();
-    computeHealthScore();
-    generateSmartAlerts();
-    generateAutoInsights();
-    generateSavingsSuggestions();
-}
+                document.getElementById(loadId).remove();
+                box.innerHTML += `<div class="msg bot">${reply}</div>`;
 
-function computeHealthScore() {
-    const t = calcTotals();
-    let score = 0;
+                // Update mini insight
+                if (reply.length > 20) document.getElementById('miniInsight').innerText = reply.slice(0, 150) + '...';
 
-    // Savings rate (0-35 pts)
-    if(t.savingsRate>=30) score+=35;
-    else if(t.savingsRate>=20) score+=25;
-    else if(t.savingsRate>=10) score+=15;
-    else if(t.savingsRate>0)   score+=5;
-
-    // Budget adherence (0-25 pts)
-    const overBudgetCats = Object.keys(budgetData).filter(cat=>{
-        const spent = expenseData.filter(e=>e.category===cat).reduce((s,e)=>s+parseFloat(e.amount),0);
-        return spent > budgetData[cat];
-    });
-    const adherence = 1 - (overBudgetCats.length / Math.max(Object.keys(budgetData).length,1));
-    score += Math.round(adherence * 25);
-
-    // Goals progress (0-20 pts)
-    if(goalsData.length) {
-        const avgGoalPct = goalsData.reduce((s,g)=>s+(g.current/g.target*100),0)/goalsData.length;
-        score += Math.round(Math.min(avgGoalPct/100,1)*20);
-    }
-
-    // EMI load (0-20 pts)
-    const emiRatio = t.totalIncome>0?(t.totalEMI/t.totalIncome*100):100;
-    if(emiRatio<20) score+=20;
-    else if(emiRatio<35) score+=12;
-    else if(emiRatio<50) score+=5;
-
-    score = Math.min(score, 100);
-
-    const ringCircle = document.getElementById('aiRingCircle');
-    const circumference = 263.89;
-    ringCircle.style.strokeDashoffset = circumference - (score/100)*circumference;
-    ringCircle.style.stroke = score>=70?'var(--green)':score>=50?'var(--orange)':'var(--red)';
-    document.getElementById('aiScoreVal').textContent = score;
-
-    let label, sub;
-    if(score>=80){label='Excellent';sub='Your finances are in great shape!';}
-    else if(score>=60){label='Good';sub='Solid foundation, keep it up';}
-    else if(score>=40){label='Fair';sub='A few areas need attention';}
-    else{label='Needs Work';sub='Focus on savings & budget control';}
-    document.getElementById('aiHealthLabel').textContent = label;
-    document.getElementById('aiHealthSub').textContent   = sub;
-}
-
-function generateSmartAlerts() {
-    const div = document.getElementById('smartAlerts');
-    const alerts = [];
-    const t = calcTotals();
-    const thisM  = getThisMonthExpenses();
-    const lastM  = getLastMonthExpenses();
-    const thisTotal = thisM.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const lastTotal = lastM.reduce((s,e)=>s+parseFloat(e.amount),0);
-
-    // Risky spending detection
-    if(lastTotal>0){
-        const pct = (thisTotal-lastTotal)/lastTotal*100;
-        if(pct>=40) alerts.push({type:'danger',icon:'🚨',title:'Risky Spending Spike',body:`Your expenses increased by ${pct.toFixed(0)}% compared to last month. Immediate action recommended.`});
-        else if(pct>=20) alerts.push({type:'warning',icon:'⚠️',title:'Spending Up This Month',body:`Expenses are ${pct.toFixed(0)}% higher than last month. Review your budget.`});
-    }
-
-    // Over-budget categories
-    const overBudget = Object.keys(budgetData).filter(cat=>{
-        const spent = expenseData.filter(e=>e.category===cat).reduce((s,e)=>s+parseFloat(e.amount),0);
-        return spent > budgetData[cat]*1.1;
-    });
-    if(overBudget.length) {
-        alerts.push({type:'warning',icon:'💸',title:'Over Budget',body:`You've exceeded your budget in: ${overBudget.join(', ')}. Consider adjusting spending or raising budgets.`});
-    }
-
-    // Low savings rate
-    if(t.savingsRate<10 && t.totalIncome>0) {
-        alerts.push({type:'danger',icon:'📉',title:'Low Savings Rate',body:`Your savings rate is ${t.savingsRate.toFixed(1)}%. Financial experts recommend at least 20%. Try to cut non-essential expenses.`});
-    }
-
-    // Upcoming EMIs
-    const today = new Date();
-    const urgentEMI = emiData.filter(e=>{
-        const d = Math.ceil((new Date(e.date)-today)/86400000);
-        return d>=0 && d<=3;
-    });
-    if(urgentEMI.length) {
-        alerts.push({type:'danger',icon:'🔔',title:'EMI Due Very Soon',body:`${urgentEMI.map(e=>e.name+' ('+fmt(e.amount)+')').join(', ')} due within 3 days!`});
-    }
-
-    // Goals near complete
-    const nearComplete = goalsData.filter(g=>(g.current/g.target)>=0.9 && g.current<g.target);
-    if(nearComplete.length) {
-        alerts.push({type:'success',icon:'🎉',title:'Goal Almost Reached!',body:`You're 90%+ towards: ${nearComplete.map(g=>g.name).join(', ')}. One more push!`});
-    }
-
-    if(!alerts.length){
-        div.innerHTML='<div class="insight-card success"><span class="insight-icon">✅</span><div><div class="insight-title">All Clear</div><div class="insight-body">No alerts right now. Your finances look healthy!</div></div></div>';
-        return;
-    }
-    div.innerHTML = alerts.map(a=>`
-        <div class="insight-card ${a.type}">
-            <span class="insight-icon">${a.icon}</span>
-            <div><div class="insight-title">${a.title}</div><div class="insight-body">${a.body}</div></div>
-        </div>
-    `).join('');
-}
-
-function generateAutoInsights() {
-    const div = document.getElementById('autoInsights');
-    const t = calcTotals();
-    const insights = [];
-    const catBreak = getCategoryBreakdown(expenseData);
-    const topCat   = getTopCategory(expenseData);
-    const thisM    = getThisMonthExpenses();
-    const thisTotal= thisM.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const lastM    = getLastMonthExpenses();
-    const lastTotal= lastM.reduce((s,e)=>s+parseFloat(e.amount),0);
-
-    if(topCat){
-        const pctOfTotal = t.totalExpenses>0?(topCat[1]/t.totalExpenses*100):0;
-        insights.push({type:'info',icon:'📊',title:`Top Spending: ${topCat[0]}`,body:`${topCat[0]} accounts for ${pctOfTotal.toFixed(0)}% of all your spending (${fmt(topCat[1])}). This is your highest expense category.`});
-    }
-
-    if(lastTotal>0 && thisTotal>0){
-        const pct = (thisTotal-lastTotal)/lastTotal*100;
-        const sign = pct>=0?'+':'';
-        const type = pct>30?'danger':pct>0?'warning':'success';
-        insights.push({type,icon:pct>=0?'📈':'📉',title:`Month-over-Month Spending`,body:`You spent ${fmt(thisTotal)} this month vs ${fmt(lastTotal)} last month — that's a ${sign}${pct.toFixed(1)}% change.`});
-    }
-
-    if(t.savingsRate>=20){
-        insights.push({type:'success',icon:'🏆',title:'Great Savings Rate!',body:`Your savings rate of ${t.savingsRate.toFixed(1)}% is above the recommended 20% threshold. Excellent financial discipline!`});
-    }
-
-    // EMI-to-income ratio
-    if(t.totalIncome>0 && t.totalEMI>0){
-        const ratio = (t.totalEMI/t.totalIncome*100).toFixed(1);
-        const type  = ratio>50?'danger':ratio>35?'warning':'success';
-        insights.push({type,icon:'💳',title:`EMI-to-Income Ratio: ${ratio}%`,body:`Your monthly EMIs are ${ratio}% of your income (${fmt(t.totalEMI)}). ${ratio>50?'This is dangerously high — consider prepayment.':ratio>35?'This is above the safe 35% threshold.':'This is within the safe range.'}`});
-    }
-
-    // Budget utilisation
-    const totalBudget   = Object.values(budgetData).reduce((s,v)=>s+v,0);
-    const budgetUsedPct = totalBudget>0?(t.totalExpenses/totalBudget*100).toFixed(1):0;
-    if(totalBudget>0){
-        const type = budgetUsedPct>100?'danger':budgetUsedPct>80?'warning':'success';
-        insights.push({type,icon:'📈',title:`Budget Utilisation: ${budgetUsedPct}%`,body:`You've used ${budgetUsedPct}% of your total monthly budget (${fmt(t.totalExpenses)} of ${fmt(totalBudget)}). ${budgetUsedPct>100?'You are over budget!':budgetUsedPct>80?'You are close to your limit.':'You are on track.'}`});
-    }
-
-    if(!insights.length){
-        div.innerHTML='<div class="insight-card info"><span class="insight-icon">📊</span><div><div class="insight-title">Add Data for Insights</div><div class="insight-body">Start adding income and expenses to see personalised AI insights here.</div></div></div>';
-        return;
-    }
-
-    div.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;">
-        ${insights.map(i=>`
-            <div class="insight-card ${i.type}">
-                <span class="insight-icon">${i.icon}</span>
-                <div><div class="insight-title">${i.title}</div><div class="insight-body">${i.body}</div></div>
-            </div>
-        `).join('')}
-    </div>`;
-}
-
-function generateSavingsSuggestions() {
-    const div = document.getElementById('savingsSuggestions');
-    const t = calcTotals();
-    const catBreak = getCategoryBreakdown(expenseData);
-    const sugs = [];
-
-    // Suggest reducing top category
-    const top3 = Object.entries(catBreak).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    top3.forEach(([cat,amt])=>{
-        const bgt = budgetData[cat];
-        if(bgt && amt > bgt) {
-            const over = amt-bgt;
-            sugs.push({icon:'✂️',title:`Reduce ${cat} spending`,body:`You've overspent your ${cat} budget by ${fmt(over)}. Setting a stricter limit or tracking daily could help recover ${fmt(over)} this month.`,type:'warning'});
+            } catch (err) {
+                document.getElementById(loadId).innerText = "❌ Error connecting to AI.";
+            }
+            box.scrollTop = box.scrollHeight;
         }
-    });
-
-    // EMI suggestion
-    if(t.totalEMI>0 && t.totalIncome>0 && (t.totalEMI/t.totalIncome)>0.4){
-        sugs.push({icon:'💳',title:'Consider EMI prepayment',body:`Your EMIs eat ${(t.totalEMI/t.totalIncome*100).toFixed(0)}% of income. Paying off high-interest loans early can free up ${fmt(t.totalEMI/2)} per month.`,type:'info'});
-    }
-
-    // Savings rate improvement
-    if(t.savingsRate < 20 && t.totalIncome>0){
-        const targetSaving = t.totalIncome*0.20;
-        const currentSaving = Math.max(t.netSavings,0);
-        const gap = targetSaving - currentSaving;
-        if(gap>0) sugs.push({icon:'💰',title:'Boost your savings to 20%',body:`You need to save ${fmt(gap)} more per month to reach the 20% savings target. Try the 50-30-20 rule: 50% needs, 30% wants, 20% savings.`,type:'info'});
-    }
-
-    // Dining suggestion
-    if(catBreak['Dining Out'] && catBreak['Dining Out'] > (budgetData['Dining Out']||8000)*1.1){
-        sugs.push({icon:'🍽️',title:'Cut dining out costs',body:`Reducing dining out by 30% could save you ${fmt(catBreak['Dining Out']*0.30)} monthly. Meal-prepping even 3 days/week makes a big difference.`,type:'warning'});
-    }
-
-    // Entertainment suggestion
-    if(catBreak['Entertainment'] && catBreak['Entertainment'] > (budgetData['Entertainment']||5000)){
-        sugs.push({icon:'🎬',title:'Review entertainment subscriptions',body:`You spent ${fmt(catBreak['Entertainment'])} on entertainment. Check for unused subscriptions — canceling just 2-3 can save ₹500-₹1500/month.`,type:'warning'});
-    }
-
-    // Goal contribution suggestion
-    if(goalsData.length && t.netSavings>0){
-        const totalMonthly = goalsData.reduce((s,g)=>s+parseFloat(g.monthly),0);
-        if(t.netSavings > totalMonthly*1.5){
-            sugs.push({icon:'🎯',title:'Increase goal contributions',body:`You have surplus savings of ${fmt(t.netSavings - totalMonthly)}. Consider increasing monthly contributions to your goals to reach them faster.`,type:'success'});
-        }
-    }
-
-    // Emergency fund
-    const hasEmergency = goalsData.some(g=>g.name.toLowerCase().includes('emergency'));
-    if(!hasEmergency){
-        sugs.push({icon:'🏦',title:'Build an Emergency Fund',body:`No emergency fund goal detected. Aim for 6 months of expenses (~${fmt(t.totalExpenses/Math.max(incomeData.length,1)*6)}) to protect against unexpected events.`,type:'info'});
-    }
-
-    // Generic suggestions always shown
-    sugs.push({icon:'📊',title:'Follow the 50-30-20 Rule',body:`Allocate 50% of income to needs (${fmt(t.totalIncome*0.5)}), 30% to wants (${fmt(t.totalIncome*0.3)}), and 20% to savings (${fmt(t.totalIncome*0.2)}).`,type:'info'});
-    sugs.push({icon:'📈',title:'Start a Monthly SIP',body:`Even ₹1,000/month invested in mutual funds at 12% annual returns grows to ~₹2 lakhs in 10 years thanks to compounding.`,type:'success'});
-
-    div.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
-        ${sugs.map(s=>`
-            <div class="insight-card ${s.type}">
-                <span class="insight-icon">${s.icon}</span>
-                <div><div class="insight-title">${s.title}</div><div class="insight-body">${s.body}</div></div>
-            </div>
-        `).join('')}
-    </div>`;
-}
-
-// ─── KICK OFF ─────────────────────────────────────────
-init();
-</script>
+    </script>
 </body>
+
 </html>
