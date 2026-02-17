@@ -1147,7 +1147,7 @@
 
             try {
                 db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                await initAuth(); // Changed from refreshData()
+                await initAuth();
             } catch (e) {
                 showToast('❌ Connection Failed: ' + e.message);
             }
@@ -1183,13 +1183,16 @@
         }
 
         // ─── DATA & RENDER ───
+        // ✅✅✅ CORRECTED FUNCTION - FILTERS BY user_id ✅✅✅
         async function refreshData() {
+            if (!currentUser) return; // Safety check
+            
             const [inc, exp, bud, emi, gls] = await Promise.all([
-                db.from('income').select('*').order('date', { ascending: false }),
-                db.from('expenses').select('*').order('date', { ascending: false }),
-                db.from('budgets').select('*'),
-                db.from('emis').select('*').order('date', { ascending: true }),
-                db.from('goals').select('*').order('created_at', { ascending: true })
+                db.from('income').select('*').eq('user_id', currentUser.id).order('date', { ascending: false }),
+                db.from('expenses').select('*').eq('user_id', currentUser.id).order('date', { ascending: false }),
+                db.from('budgets').select('*').eq('user_id', currentUser.id),
+                db.from('emis').select('*').eq('user_id', currentUser.id).order('date', { ascending: true }),
+                db.from('goals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true })
             ]);
 
             incomeData = inc.data || [];
@@ -1352,20 +1355,20 @@
         document.getElementById('incomeForm').onsubmit = async (e) => {
             e.preventDefault();
             const item = {
-                user_id: currentUser.id, // Add Auth ID
+                user_id: currentUser.id,
                 date: document.getElementById('incDate').value,
                 source: document.getElementById('incSource').value,
                 amount: parseFloat(document.getElementById('incAmount').value)
             };
             const { data, error } = await db.from('income').insert([item]).select();
             if (error) showToast('❌ Error: ' + error.message);
-            else { incomeData.unshift(data[0]); renderIncome(); showToast('✅ Income Added'); }
+            else { incomeData.unshift(data[0]); renderIncome(); renderDashboard(); showToast('✅ Income Added'); e.target.reset(); document.getElementById('incDate').value = new Date().toISOString().split('T')[0]; }
         };
 
         document.getElementById('expenseForm').onsubmit = async (e) => {
             e.preventDefault();
             const item = {
-                user_id: currentUser.id, // Add Auth ID
+                user_id: currentUser.id,
                 date: document.getElementById('expDate').value,
                 category: document.getElementById('expCategory').value,
                 description: document.getElementById('expDesc').value,
@@ -1373,30 +1376,28 @@
             };
             const { data, error } = await db.from('expenses').insert([item]).select();
             if (error) showToast('❌ Error: ' + error.message);
-            else { expenseData.unshift(data[0]); renderExpenses(); showToast('✅ Expense Added'); }
+            else { expenseData.unshift(data[0]); renderExpenses(); renderDashboard(); showToast('✅ Expense Added'); e.target.reset(); document.getElementById('expDate').value = new Date().toISOString().split('T')[0]; }
         };
 
         document.getElementById('budgetForm').onsubmit = async (e) => {
             e.preventDefault();
             const cat = document.getElementById('budCategory').value;
             const amt = parseFloat(document.getElementById('budAmount').value);
-            // Upsert with user_id is tricky if not unique constraint includes user_id. 
-            // For simplicity, we assume RLS handles visibility, but upsert needs constraint.
-            // We'll add user_id to the object.
+            
             const { error } = await db.from('budgets').upsert([{
                 user_id: currentUser.id,
                 category: cat,
                 amount: amt
-            }], { onConflict: 'category' }); // Note: unique constraint might fail if multiple users use same category name unless constraint includes user_id
+            }], { onConflict: 'user_id,category' });
 
             if (error) showToast('❌ Error: ' + error.message);
-            else { budgetData[cat] = amt; renderBudget(); showToast('✅ Budget Set'); }
+            else { budgetData[cat] = amt; renderBudget(); renderDashboard(); showToast('✅ Budget Set'); }
         };
 
         document.getElementById('emiForm').onsubmit = async (e) => {
             e.preventDefault();
             const item = {
-                user_id: currentUser.id, // Add Auth ID
+                user_id: currentUser.id,
                 name: document.getElementById('emiName').value,
                 date: document.getElementById('emiDate').value,
                 amount: parseFloat(document.getElementById('emiAmount').value),
@@ -1404,25 +1405,25 @@
             };
             const { data, error } = await db.from('emis').insert([item]).select();
             if (error) showToast('❌ Error: ' + error.message);
-            else { emiData.push(data[0]); renderEMI(); showToast('✅ EMI Added'); }
+            else { emiData.push(data[0]); renderEMI(); renderDashboard(); showToast('✅ EMI Added'); e.target.reset(); document.getElementById('emiDate').value = new Date().toISOString().split('T')[0]; }
         };
 
         document.getElementById('goalForm').onsubmit = async (e) => {
             e.preventDefault();
             const item = {
-                user_id: currentUser.id, // Add Auth ID
+                user_id: currentUser.id,
                 name: document.getElementById('goalName').value,
                 target: parseFloat(document.getElementById('goalTarget').value),
                 current: parseFloat(document.getElementById('goalCurrent').value)
             };
             const { data, error } = await db.from('goals').insert([item]).select();
             if (error) showToast('❌ Error: ' + error.message);
-            else { goalsData.push(data[0]); renderGoals(); showToast('✅ Goal Created'); }
+            else { goalsData.push(data[0]); renderGoals(); showToast('✅ Goal Created'); e.target.reset(); }
         };
 
         async function del(table, id) {
             if (!confirm('Are you sure?')) return;
-            await db.from(table).delete().eq('id', id);
+            await db.from(table).delete().eq('id', id).eq('user_id', currentUser.id);
             await refreshData();
             showToast('🗑️ Item Removed');
         }
@@ -1479,8 +1480,7 @@
                         model: 'claude-3-haiku-20240307',
                         max_tokens: 300,
                         messages: [
-                            { role: "system", content: "You are a financial advisor. Answer briefly based on the provided data. Currency is INR (₹)." },
-                            { role: "user", content: `Context: ${context}\n\nQuestion: ${msg}` }
+                            { role: "user", content: `Context: ${context}\n\nQuestion: ${msg}\n\nAnswer briefly as a financial advisor. Currency is INR (₹).` }
                         ]
                     })
                 });
