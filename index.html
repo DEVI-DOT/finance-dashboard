@@ -865,6 +865,16 @@
                                 <input type="text" id="expDesc" placeholder="e.g. Uber" required>
                             </div>
                             <div class="form-group">
+                                <label>Payment Method</label>
+                                <select id="expPayment" required>
+                                    <option>Cash</option>
+                                    <option>Credit Card</option>
+                                    <option>Debit Card</option>
+                                    <option>UPI</option>
+                                    <option>Net Banking</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label>Amount (₹)</label>
                                 <input type="number" id="expAmount" placeholder="0" required>
                             </div>
@@ -965,6 +975,10 @@
                             <div class="form-group">
                                 <label>Current Saved (₹)</label>
                                 <input type="number" id="goalCurrent" placeholder="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Deadline Date</label>
+                                <input type="date" id="goalDeadline" required>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width:100%">Add Goal</button>
                         </form>
@@ -1191,7 +1205,7 @@
                 db.from('income').select('*').eq('user_id', currentUser.id).order('date', { ascending: false }),
                 db.from('expenses').select('*').eq('user_id', currentUser.id).order('date', { ascending: false }),
                 db.from('budgets').select('*').eq('user_id', currentUser.id),
-                db.from('emis').select('*').eq('user_id', currentUser.id).order('date', { ascending: true }),
+                db.from('emis').select('*').eq('user_id', currentUser.id).order('due_date', { ascending: true }),
                 db.from('goals').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true })
             ]);
 
@@ -1205,6 +1219,9 @@
 
             renderDashboard();
             renderBudget(); // Pre-calc for dashboard
+            
+            // Check for pending reminders
+            setTimeout(() => checkAllReminders(), 1000);
         }
 
         function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
@@ -1314,18 +1331,22 @@
         function renderEMI() {
             const el = document.getElementById('emiList');
             if (!emiData.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No active EMIs.</div>'; return; }
-            el.innerHTML = emiData.map(e => `
+            el.innerHTML = emiData.map(e => {
+                const reminderStatus = e.reminder_sent ? '📧 Reminder sent' : '';
+                const dueDate = e.due_date || e.date; // Support both old and new field names
+                return `
         <div class="list-item">
             <div>
                 <div style="font-weight:600;">${e.name}</div>
-                <div style="font-size:0.8em;color:var(--primary);margin-top:2px;">Due: ${e.date}</div>
+                <div style="font-size:0.8em;color:var(--primary);margin-top:2px;">Due: ${dueDate}</div>
+                ${reminderStatus ? `<div style="font-size:0.7em;color:var(--success);margin-top:2px;">${reminderStatus}</div>` : ''}
             </div>
             <div style="text-align:right;">
                 <div style="font-weight:700;">${fmt(e.amount)}/mo</div>
                 <button class="btn-sm btn-accent" style="font-size:0.7em;" onclick="del('emis', ${e.id})">Remove</button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
         }
 
         function renderGoals() {
@@ -1333,6 +1354,9 @@
             if (!goalsData.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No savings goals set.</div>'; return; }
             el.innerHTML = goalsData.map(g => {
                 const pct = Math.min((g.current / g.target) * 100, 100).toFixed(1);
+                const deadline = g.deadline ? new Date(g.deadline).toLocaleDateString('en-IN') : 'No deadline';
+                const reminderStatus = g.reminder_sent ? '📧 Reminder sent' : '';
+                
                 return `
         <div class="card" style="padding:16px; background:rgba(0,0,0,0.2);">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
@@ -1343,6 +1367,10 @@
             <div style="display:flex;justify-content:space-between;font-size:0.8em;color:var(--text-muted);">
                 <span>Saved: ${fmt(g.current)}</span>
                 <span>Target: ${fmt(g.target)}</span>
+            </div>
+            <div style="font-size:0.75em;color:var(--text-muted);margin-top:6px;">
+                <div>📅 Deadline: ${deadline}</div>
+                ${reminderStatus ? `<div style="color:var(--success);margin-top:4px;">${reminderStatus}</div>` : ''}
             </div>
             <button class="btn-sm btn-accent" style="margin-top:10px;width:100%;" onclick="del('goals',${g.id})">Delete Goal</button>
         </div>`
@@ -1372,6 +1400,7 @@
                 date: document.getElementById('expDate').value,
                 category: document.getElementById('expCategory').value,
                 description: document.getElementById('expDesc').value,
+                payment_method: document.getElementById('expPayment').value,
                 amount: parseFloat(document.getElementById('expAmount').value)
             };
             const { data, error } = await db.from('expenses').insert([item]).select();
@@ -1399,13 +1428,23 @@
             const item = {
                 user_id: currentUser.id,
                 name: document.getElementById('emiName').value,
-                date: document.getElementById('emiDate').value,
+                due_date: document.getElementById('emiDate').value,
                 amount: parseFloat(document.getElementById('emiAmount').value),
                 principal: parseFloat(document.getElementById('emiPrincipal').value || 0)
             };
             const { data, error } = await db.from('emis').insert([item]).select();
             if (error) showToast('❌ Error: ' + error.message);
-            else { emiData.push(data[0]); renderEMI(); renderDashboard(); showToast('✅ EMI Added'); e.target.reset(); document.getElementById('emiDate').value = new Date().toISOString().split('T')[0]; }
+            else { 
+                emiData.push(data[0]); 
+                renderEMI(); 
+                renderDashboard(); 
+                showToast('✅ EMI Added'); 
+                e.target.reset(); 
+                document.getElementById('emiDate').value = new Date().toISOString().split('T')[0];
+                
+                // Check if reminder should be sent
+                checkEMIReminder(data[0]);
+            }
         };
 
         document.getElementById('goalForm').onsubmit = async (e) => {
@@ -1414,11 +1453,20 @@
                 user_id: currentUser.id,
                 name: document.getElementById('goalName').value,
                 target: parseFloat(document.getElementById('goalTarget').value),
-                current: parseFloat(document.getElementById('goalCurrent').value)
+                current: parseFloat(document.getElementById('goalCurrent').value),
+                deadline: document.getElementById('goalDeadline').value
             };
             const { data, error } = await db.from('goals').insert([item]).select();
             if (error) showToast('❌ Error: ' + error.message);
-            else { goalsData.push(data[0]); renderGoals(); showToast('✅ Goal Created'); e.target.reset(); }
+            else { 
+                goalsData.push(data[0]); 
+                renderGoals(); 
+                showToast('✅ Goal Created'); 
+                e.target.reset();
+                
+                // Check if reminder should be sent
+                checkGoalReminder(data[0]);
+            }
         };
 
         async function del(table, id) {
@@ -1497,6 +1545,86 @@
                 document.getElementById(loadId).innerText = "❌ Error connecting to AI.";
             }
             box.scrollTop = box.scrollHeight;
+        }
+
+        // ─── EMAIL REMINDER FUNCTIONS ───
+
+        async function checkGoalReminder(goal) {
+            const deadline = new Date(goal.deadline);
+            const today = new Date();
+            const daysUntil = Math.floor((deadline - today) / (1000 * 60 * 60 * 24));
+            
+            // Send reminder if deadline is within 28 days (4 weeks)
+            if (daysUntil <= 28 && daysUntil >= 0 && !goal.reminder_sent) {
+                await sendReminderEmail('goal', goal);
+            }
+        }
+
+        async function checkEMIReminder(emi) {
+            const dueDate = new Date(emi.due_date);
+            const today = new Date();
+            const daysUntil = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+            
+            // Send reminder if due date is within 7 days
+            if (daysUntil <= 7 && daysUntil >= 0 && !emi.reminder_sent) {
+                await sendReminderEmail('emi', emi);
+            }
+        }
+
+        async function sendReminderEmail(type, item) {
+            const userEmail = currentUser.email;
+            let subject, message;
+            
+            if (type === 'goal') {
+                subject = `Goal Deadline Reminder: ${item.name}`;
+                message = `Your savings goal "${item.name}" is approaching its deadline on ${item.deadline}. Current progress: ₹${item.current} / ₹${item.target}`;
+            } else {
+                subject = `EMI Payment Reminder: ${item.name}`;
+                message = `Your EMI payment for "${item.name}" is due on ${item.due_date}. Amount: ₹${item.amount}`;
+            }
+            
+            // Log to database
+            const { data, error } = await db.from('email_reminders').insert([{
+                user_id: currentUser.id,
+                reminder_type: type,
+                reference_id: item.id,
+                email: userEmail,
+                subject: subject,
+                message: message,
+                status: 'sent',
+                sent_at: new Date().toISOString()
+            }]).select();
+            
+            if (!error) {
+                // Mark as sent in the goal/emi table
+                const table = type === 'goal' ? 'goals' : 'emis';
+                await db.from(table).update({ 
+                    reminder_sent: true, 
+                    last_reminder_at: new Date().toISOString() 
+                }).eq('id', item.id);
+                
+                // Show success message
+                showToast(`📧 Reminder email sent to ${userEmail}`, 'success');
+            }
+        }
+
+        // Check all pending reminders
+        async function checkAllReminders() {
+            if (!currentUser) return;
+            
+            // Check goals
+            for (const goal of goalsData) {
+                if (goal.deadline) {
+                    await checkGoalReminder(goal);
+                }
+            }
+            
+            // Check EMIs
+            for (const emi of emiData) {
+                if (emi.due_date) {
+                    await checkEMIReminder(emi);
+                }
+            }
         }
     </script>
 </body>
